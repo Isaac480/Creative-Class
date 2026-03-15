@@ -197,7 +197,6 @@ def post_subject_data(
     session.refresh(trial_data)
 
     # update participant
-
     participant = session.exec(
         select(Participant).where(Participant.worker_id == data.worker_id)
     ).first()
@@ -218,6 +217,92 @@ def post_subject_data(
     session.add(trial_data)
     session.commit()
     session.refresh(trial_data)
+
+
+@app.post("/KAI_data")
+def post_KAI_data(
+    *, session: Session = Depends(get_session), data: ParticipantDataIn
+):
+    """Store KAI survey responses separately from main experiment data."""
+    if not data.KAI_responses:
+        raise HTTPException(status_code=400, detail="No KAI responses provided")
+    
+    # Create KAI data entry
+    kai_data = Data(
+        condition=data.condition, 
+        json_data=[{"KAI_responses": data.KAI_responses}]
+    )
+    session.add(kai_data)
+    session.commit()
+    session.refresh(kai_data)
+
+    # Update participant status to indicate survey completion
+    participant = session.exec(
+        select(Participant).where(Participant.worker_id == data.worker_id)
+    ).first()
+
+    if participant.status == "started":
+        participant.status = "working_finished_survey"
+    elif participant.status.startswith("working"):
+        participant.status = participant.status.replace("working", "working_finished_survey")
+
+    session.add(participant)
+    session.commit()
+    session.refresh(participant)
+
+    kai_data.participant = participant
+    kai_data.worker_id = participant.worker_id
+
+    session.add(kai_data)
+    session.commit()
+    session.refresh(kai_data)
+    
+    return {"message": "KAI survey data saved successfully", "data_id": kai_data.id}
+
+
+@app.post("/KAI_survey_data")
+def post_KAI_survey_data(
+    *, session: Session = Depends(get_session), data: dict
+):
+    """Store KAI survey responses with flexible format."""
+    worker_id = data.get("worker_id")
+    condition = data.get("condition")
+    KAI_responses = data.get("KAI_responses")
+    
+    if not worker_id or not condition or not KAI_responses:
+        raise HTTPException(status_code=400, detail="Missing required fields: worker_id, condition, or KAI_responses")
+    
+    # Create KAI data entry
+    kai_data = Data(
+        condition=condition, 
+        json_data=[{"KAI_responses": KAI_responses}]
+    )
+    session.add(kai_data)
+    session.commit()
+    session.refresh(kai_data)
+
+    # Update participant status to indicate survey completion
+    participant = session.exec(
+        select(Participant).where(Participant.worker_id == worker_id)
+    ).first()
+
+    if participant.status == "started":
+        participant.status = "working_finished_survey"
+    elif participant.status.startswith("working"):
+        participant.status = participant.status.replace("working", "working_finished_survey")
+
+    session.add(participant)
+    session.commit()
+    session.refresh(participant)
+
+    kai_data.participant = participant
+    kai_data.worker_id = participant.worker_id
+
+    session.add(kai_data)
+    session.commit()
+    session.refresh(kai_data)
+    
+    return {"message": "KAI survey data saved successfully", "data_id": kai_data.id}
 
 
 @app.get("/participants")
@@ -266,40 +351,35 @@ def initialize_experiment(
     Creates a participant.
     """
 
-    # Make sure participant does not already exist; if so, return that
+    # Check if participant already exists
     existing_participant = session.exec(
         select(Participant).where(Participant.worker_id == participant_in.worker_id)
     ).first()
 
     print("checked for existing participant")
     if existing_participant:
-        logger.info(
-            f"Participant {participant_in.worker_id} already exists; returning that one."
-        )
+        # Update existing participant with current condition if it's different
+        if existing_participant.condition != condition:
+            logger.info(
+                f"Participant {participant_in.worker_id} exists with condition '{existing_participant.condition}', updating to '{condition}'"
+            )
+            existing_participant.condition = condition
+            session.add(existing_participant)
+            session.commit()
+            session.refresh(existing_participant)
+        else:
+            logger.info(
+                f"Participant {participant_in.worker_id} already exists with correct condition '{condition}'."
+            )
+        
         experiment_configuration = ExperimentConfiguration(
-            # debug_mode=settings.debug_mode,
-            # estimated_task_duration=settings.estimated_task_duration,
-            # compensation=settings.compensation,
-            # experiment_title=settings.experiment_title,
-            # experiment_name=settings.experiment_name,
-            # version_date=settings.version_date,
-            # open_tags=settings.open_tags,
-            # close_tags=settings.close_tags,
-            # logrocket_id=settings.logrocket_id,
-            # intertrial_interval=settings.intertrial_interval,
-            # stimulus_width=settings.stimulus_width,
-            # stimulus_height=settings.stimulus_height,
-            # slider_width=settings.slider_width,
-            # num_stimuli=settings.num_stimuli,
-            # percent_repeats=settings.percent_repeats,
-            # min_gap_between_repeats=settings.min_gap_between_repeats,
             **experiment_configuration_dict,
             **existing_participant.dict(),
         )
 
         return experiment_configuration
 
-    # Create participant
+    # Create new participant with current condition
     participant = Participant(
         worker_id=participant_in.worker_id,
         hit_id=participant_in.hit_id,

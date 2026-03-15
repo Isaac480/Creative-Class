@@ -82,6 +82,7 @@ class ParticipantDataIn(SQLModel):
     condition: Optional[str]
     start_time: Optional[datetime]
     json_data: List[Dict]
+    KAI_responses: Optional[Dict] = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -104,7 +105,7 @@ class Data(SQLModel, table=True):
 class ExperimentConfiguration(SQLModel):
     worker_id: str
     status: str
-    condition: str = "happy"
+    condition: str
     data_id: Optional[int]
     start_time: Optional[datetime]
     end_time: Optional[datetime]

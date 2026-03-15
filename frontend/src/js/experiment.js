@@ -245,6 +245,37 @@ export default async function runExperiment({
     },
   };
 
+  const kai_questionnaire = {
+    type: render_mustache_template.info.name,
+    url: `${template_dir}/kai-questionnaire.html`,
+    cont_btn,
+    post_trial_gap: intertrial_interval,
+    data: {
+      form_name: "kaiForm",
+      form_id: "#kaiForm",
+      experiment_phase: "kai_questionnaire",
+    },
+    tags,
+    check_fn() {
+      return $(this.data.form_id).valid();
+    },
+    on_start() {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_task",
+      });
+    },
+    on_finish(data) {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_kai_questionnaire",
+      });
+      data.form_data = JSON.stringify(getFormData(this.data.form_id));
+    },
+  };
+
   const debriefing = {
     type: render_mustache_template.info.name,
     url: `${template_dir}/debriefing.html`,
@@ -263,11 +294,12 @@ export default async function runExperiment({
   // * Timeline
   const timeline = [
     consent,
+    survey,
     fullscreen_start,
     attrition,
     instructions,
     ...trials,
-    survey,
+    //kai_questionnaire,
     debriefing,
     fullscreen_end,
   ];

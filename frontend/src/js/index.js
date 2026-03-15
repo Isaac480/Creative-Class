@@ -126,7 +126,25 @@ import "../css/index.css";
     // return [example_trial];
 
     // slider example
-    const stimuli = getStimuli({ image_dir, num_stimuli: 2, extension });
+    const stimuli = getStimuli({ image_dir, num_stimuli: 10, extension });
+    
+    // Define condition-specific prompts and labels
+    let prompt, labels;
+    if (condition === "professional") {
+      prompt = `<h1 class="text-center mt-2 mb-4">How likely are you to seek practical/professional advice from this person?</h1>`;
+      labels = ["Not likely", "Likely"];
+    } else if (condition === "emotional") {
+      prompt = `<h1 class="text-center mt-2 mb-4">How likely are you to seek emotional advice from this person?</h1>`;
+      labels = ["Not likely", "Likely"];
+    } else if (condition === "smart") {
+      prompt = `<h1 class="text-center mt-2 mb-4">How smart does this person look?</h1>`;
+      labels = ["Not smart", "Very smart"];
+    } else {
+      // Default fallback
+      prompt = `<h1 class="text-center mt-2 mb-4">How ${condition} does this face look?</h1>`;
+      labels = [`Not at all ${condition}`, `Extremely ${condition}`];
+    }
+    
     return generateRatingTrials({
       type: image_slider_response.info.name,
       stimuli,
@@ -135,8 +153,8 @@ import "../css/index.css";
       condition,
       slider_amount_visible,
       show_slider_delay,
-      labels: [`Not at all ${condition}`, `Extremely ${condition}`],
-      prompt: `<h1 class="text-center mt-2 mb-4">How ${condition} does this face look?</h1>`,
+      labels,
+      prompt,
       response_ends_trial: true,
       experiment_phase: "main",
       post_trial_gap: intertrial_interval,

@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     shuffle: bool = True
     allotted_time: int = 3600  # in seconds
     refresh_time: int = 300  # in seconds
-    condition: str = "trustworthy"
+    condition: str = "emotional" #emotional, professional, smart
     environment_type: str = "debug"
     admin_username: str = "username_to_be_set_in_env_file_not_here"
     admin_password: str = "password_to_be_set_in_env_file_not_here"
