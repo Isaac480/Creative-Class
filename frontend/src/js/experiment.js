@@ -245,6 +245,43 @@ export default async function runExperiment({
     },
   };
 
+  const survey3 = {
+    type: render_mustache_template.info.name,
+    url: `${template_dir}/survey3.html`,
+    cont_btn,
+    post_trial_gap: intertrial_interval,
+    data: {
+      form_name: "survey3Form",
+      form_id: "#survey3Form",
+      experiment_phase: "survey",
+    },
+    tags,
+    on_load_complete_callbacks: {
+      setupFormValidation: [setupFormValidation, "survey3Form"],
+    },
+    check_fn() {
+      const valid = $(this.data.form_id).valid();
+      if (valid) {
+        this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
+      }
+      return valid;
+    },
+    on_start() {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_task",
+      });
+    },
+    on_finish() {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_survey",
+      });
+    },
+  };
+
   const kai_questionnaire = {
     type: render_mustache_template.info.name,
     url: `${template_dir}/kai-questionnaire.html`,
@@ -295,6 +332,7 @@ export default async function runExperiment({
   const timeline = [
     consent,
     survey,
+    survey3,
     fullscreen_start,
     attrition,
     instructions,
