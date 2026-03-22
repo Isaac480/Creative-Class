@@ -282,6 +282,117 @@ export default async function runExperiment({
     },
   };
 
+  const survey4 = {
+    type: render_mustache_template.info.name,
+    url: `${template_dir}/survey4.html`,
+    cont_btn,
+    post_trial_gap: intertrial_interval,
+    data: {
+      form_name: "survey4Form",
+      form_id: "#survey4Form",
+      experiment_phase: "survey",
+    },
+    tags,
+    on_load_complete_callbacks: {
+      setupFormValidation: [setupFormValidation, "survey4Form"],
+    },
+    check_fn() {
+      const valid = $(this.data.form_id).valid();
+      if (valid) {
+        this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
+      }
+      return valid;
+    },
+    on_start() {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_task",
+      });
+    },
+    on_finish() {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_survey",
+      });
+    },
+  };
+
+  const survey5 = {
+    type: render_mustache_template.info.name,
+    url: `${template_dir}/survey5.html`,
+    cont_btn,
+    post_trial_gap: intertrial_interval,
+    data: {
+      form_name: "survey5Form",
+      form_id: "#survey5Form",
+      experiment_phase: "survey",
+    },
+    tags,
+    on_load_complete_callbacks: {
+      setupFormValidation: [setupFormValidation, "survey5Form"],
+    },
+    check_fn() {
+      const valid = $(this.data.form_id).valid();
+      if (valid) {
+        this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
+      }
+      return valid;
+    },
+    on_start() {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_task",
+      });
+    },
+    on_finish() {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_survey",
+      });
+    },
+  };
+
+  const survey6 = {
+    type: render_mustache_template.info.name,
+    url: `${template_dir}/survey6.html`,
+    cont_btn,
+    post_trial_gap: intertrial_interval,
+    data: {
+      form_name: "survey6Form",
+      form_id: "#survey6Form",
+      experiment_phase: "survey",
+    },
+    tags,
+    on_load_complete_callbacks: {
+      setupFormValidation: [setupFormValidation, "survey6Form"],
+    },
+    check_fn() {
+      const valid = $(this.data.form_id).valid();
+      if (valid) {
+        this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
+      }
+      return valid;
+    },
+    on_start() {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_task",
+      });
+    },
+    on_finish() {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_survey",
+      });
+    },
+  };
+
   const kai_questionnaire = {
     type: render_mustache_template.info.name,
     url: `${template_dir}/kai-questionnaire.html`,
@@ -333,6 +444,9 @@ export default async function runExperiment({
     consent,
     survey,
     survey3,
+    survey4,
+    survey5,
+    survey6,
     fullscreen_start,
     attrition,
     instructions,
