@@ -82,7 +82,7 @@ class ParticipantDataIn(SQLModel):
     condition: Optional[str]
     start_time: Optional[datetime]
     json_data: List[Dict]
-    KAI_responses: Optional[Dict] = None
+
 
     class Config:
         arbitrary_types_allowed = True

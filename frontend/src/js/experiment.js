@@ -250,17 +250,15 @@ export default async function runExperiment({
     url: `${template_dir}/survey3.html`,
     cont_btn,
     post_trial_gap: intertrial_interval,
+    execute_script: true,
     data: {
       form_name: "survey3Form",
       form_id: "#survey3Form",
       experiment_phase: "survey",
     },
     tags,
-    on_load_complete_callbacks: {
-      setupFormValidation: [setupFormValidation, "survey3Form"],
-    },
     check_fn() {
-      const valid = $(this.data.form_id).valid();
+      const valid = window.validateKaiForm();
       if (valid) {
         this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
       }
@@ -287,17 +285,15 @@ export default async function runExperiment({
     url: `${template_dir}/survey4.html`,
     cont_btn,
     post_trial_gap: intertrial_interval,
+    execute_script: true,
     data: {
       form_name: "survey4Form",
       form_id: "#survey4Form",
       experiment_phase: "survey",
     },
     tags,
-    on_load_complete_callbacks: {
-      setupFormValidation: [setupFormValidation, "survey4Form"],
-    },
     check_fn() {
-      const valid = $(this.data.form_id).valid();
+      const valid = window.validateSurvey4Form();
       if (valid) {
         this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
       }
@@ -324,17 +320,15 @@ export default async function runExperiment({
     url: `${template_dir}/survey5.html`,
     cont_btn,
     post_trial_gap: intertrial_interval,
+    execute_script: true,
     data: {
       form_name: "survey5Form",
       form_id: "#survey5Form",
       experiment_phase: "survey",
     },
     tags,
-    on_load_complete_callbacks: {
-      setupFormValidation: [setupFormValidation, "survey5Form"],
-    },
     check_fn() {
-      const valid = $(this.data.form_id).valid();
+      const valid = window.validateSurvey5Form();
       if (valid) {
         this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
       }
@@ -361,17 +355,15 @@ export default async function runExperiment({
     url: `${template_dir}/survey6.html`,
     cont_btn,
     post_trial_gap: intertrial_interval,
+    execute_script: true,
     data: {
       form_name: "survey6Form",
       form_id: "#survey6Form",
       experiment_phase: "survey",
     },
     tags,
-    on_load_complete_callbacks: {
-      setupFormValidation: [setupFormValidation, "survey6Form"],
-    },
     check_fn() {
-      const valid = $(this.data.form_id).valid();
+      const valid = window.validateSurvey6Form();
       if (valid) {
         this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
       }

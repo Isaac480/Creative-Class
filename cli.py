@@ -63,7 +63,10 @@ def debug():
 
 
 def export(remote=True):
-    conn = psycopg2.connect(settings.database_url) if remote else sqlite3.connect("database.db")
+    if remote:
+        conn = psycopg2.connect(settings.database_url)
+    else:
+        conn = sqlite3.connect("database.db")
     for table_name in TABLE_NAMES:
         df = pd.read_sql(f"SELECT * from {table_name}", conn)
         df.to_csv(DATA_DIR / f"{table_name}.csv", index=False)

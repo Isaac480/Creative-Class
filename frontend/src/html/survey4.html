@@ -1,68 +1,174 @@
-<!-- INITIAL FORM -->
+<!-- Big 5 Personality Test -->
+<style>
+    .s4-question {
+        margin-bottom: 1.5rem;
+    }
+    .s4-question label {
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    .s4-btn-group .s4-btn {
+        padding: 8px 18px;
+        margin-right: 6px;
+        border: 2px solid #6c757d;
+        border-radius: 4px;
+        background: #fff;
+        color: #333;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: background 0.15s, border-color 0.15s;
+    }
+    .s4-btn-group .s4-btn:hover {
+        background: #e9ecef;
+    }
+    .s4-btn-group .s4-btn.active {
+        background: #2c3e50;
+        color: #fff;
+        border-color: #2c3e50;
+    }
+    .s4-validation-error {
+        color: #e74c3c;
+        font-size: 0.9rem;
+        margin-top: 0.3rem;
+        display: none;
+    }
+    #s4-global-error {
+        color: #e74c3c;
+        font-weight: bold;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+</style>
+
 <div id="survey4FormContainer" class="container my-5 text-left">
     <form id="survey4Form" name="survey4Form" onsubmit="return false">
-        
-        <!-- Test Code -->
-        <div class="form-group">
-            <h3 class="mb-4">BIG 5 PERSONALITY TEST</h3>
-            <p class="text-muted mb-4">How easy or difficult do you find it to present yourself, consistently, over a long period as:</p>
-            <label for="Q1">
-                a person who is patient.
-            </label>
-            <select required class="form-control selectpicker response" id="Q1" name="Q1">
-                <option value="NA"></option>
-                <option>Very hard</option>
-                <option>Hard</option>
-                <option>Easy</option>
-                <option>Very Easy</option>
-            </select>
 
-            <label for="Q2">
-                a person who conforms.
-            </label>
-            <select required class="form-control selectpicker response" id="Q2" name="Q2">
-                <option value="NA"></option>
-                <option>Very hard</option>
-                <option>Hard</option>
-                <option>Easy</option>
-                <option>Very Easy</option>
-            </select>
+        <h3 class="mb-4">BIG 5 PERSONALITY TEST</h3>
+        <p class="text-muted mb-4">Here are a number of personality traits that may or may not apply to you. Please indicate the extent to which you agree or disagree with each statement. You should rate the extent to which the pair of traits applies to you, even if one characteristic applies more strongly than the other.</p>
 
-            <label for="Q3">
-                a person who, when stuck, will always think of something.
-            </label>
-            <select required class="form-control selectpicker response" id="Q3" name="Q3">
-                <option value="NA"></option>
-                <option>Very hard</option>
-                <option>Hard</option>
-                <option>Easy</option>
-                <option>Very Easy</option>
-            </select>
+        <div id="s4-global-error">Please answer all questions before continuing.</div>
 
-            <label for="Q4">
-                a person who enjoys detailed work.
-            </label>
-            <select required class="form-control selectpicker response" id="Q4" name="Q4">
-                <option value="NA"></option>
-                <option>Very hard</option>
-                <option>Hard</option>
-                <option>Easy</option>
-                <option>Very Easy</option>
-            </select>
-
-            <label for="Q5">
-                a person who would rather create something than improve it.
-            </label>
-            <select required class="form-control selectpicker response" id="Q5" name="Q5">
-                <option value="NA"></option>
-                <option>Very hard</option>
-                <option>Hard</option>
-                <option>Easy</option>
-                <option>Very Easy</option>
-            </select>
+        <div id="s4-questions-container"></div>
 
         <div id="survey4FormButtonContainer" class="container text-center my-5">
             <button id="continueButton" class="btn btn-lg btn-primary">Next</button>
         </div>
     </form>
 </div>
+
+<script>
+(function() {
+    var questions = [
+        "Extraverted, enthusiastic.",
+        "Critical, quarrelsome.",
+        "Dependable, self-disciplined.",
+        "Anxious, easily upset.",
+        "Open to new experiences, complex.",
+        "Reserved, quiet.",
+        "Sympathetic, warm.",
+        "Disorganized, careless.",
+        "Calm, emotionally stable.",
+        "Conventional, uncreative."
+    ];
+
+    var options = [
+        "Completely Disagree (1)",
+        "Disagree (2)",
+        "Somewhat Disagree (3)",
+        "Neither Agree nor Disagree (4)",
+        "Somewhat Agree (5)",
+        "Agree (6)",
+        "Completely Agree (7)"
+    ];
+    var container = document.getElementById("s4-questions-container");
+
+    questions.forEach(function(text, i) {
+        var qNum = i + 1;
+        var div = document.createElement("div");
+        div.className = "s4-question";
+
+        var label = document.createElement("label");
+        label.textContent = qNum + ". " + text;
+        div.appendChild(label);
+
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "Q" + qNum;
+        input.id = "Q" + qNum;
+        input.className = "response s4-hidden-input";
+        div.appendChild(input);
+
+        var btnGroup = document.createElement("div");
+        btnGroup.className = "s4-btn-group";
+
+        options.forEach(function(opt) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "s4-btn";
+            btn.textContent = opt;
+            btn.setAttribute("data-question", "Q" + qNum);
+            btn.setAttribute("data-value", opt);
+
+            btn.addEventListener("click", function() {
+                var hiddenInput = document.getElementById(this.getAttribute("data-question"));
+                var siblings = this.parentNode.querySelectorAll(".s4-btn");
+
+                if (this.classList.contains("active")) {
+                    this.classList.remove("active");
+                    hiddenInput.value = "";
+                } else {
+                    siblings.forEach(function(s) { s.classList.remove("active"); });
+                    this.classList.add("active");
+                    hiddenInput.value = this.getAttribute("data-value");
+                }
+
+                var errorEl = this.parentNode.parentNode.querySelector(".s4-validation-error");
+                if (errorEl && hiddenInput.value) {
+                    errorEl.style.display = "none";
+                }
+            });
+
+            btnGroup.appendChild(btn);
+        });
+
+        div.appendChild(btnGroup);
+
+        var errorMsg = document.createElement("div");
+        errorMsg.className = "s4-validation-error";
+        errorMsg.textContent = "Please select an option.";
+        div.appendChild(errorMsg);
+
+        container.appendChild(div);
+    });
+
+    window.validateSurvey4Form = function() {
+        var allAnswered = true;
+        var inputs = container.querySelectorAll(".s4-hidden-input");
+        var globalError = document.getElementById("s4-global-error");
+
+        inputs.forEach(function(input) {
+            var questionDiv = input.closest(".s4-question");
+            var errorEl = questionDiv.querySelector(".s4-validation-error");
+            if (!input.value) {
+                allAnswered = false;
+                errorEl.style.display = "block";
+            } else {
+                errorEl.style.display = "none";
+            }
+        });
+
+        if (!allAnswered) {
+            globalError.style.display = "block";
+            var firstUnanswered = container.querySelector(".s4-validation-error[style*='block']");
+            if (firstUnanswered) {
+                firstUnanswered.closest(".s4-question").scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+        } else {
+            globalError.style.display = "none";
+        }
+
+        return allAnswered;
+    };
+})();
+</script>
