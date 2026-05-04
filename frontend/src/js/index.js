@@ -28,14 +28,7 @@ import "../css/index.css";
 
   const worker_info = getWorkerInfo();
 
-  console.log("!worker_info.PROLIFIC_PID", !worker_info.PROLIFIC_PID);
-
-  if (!worker_info.PROLIFIC_PID && !worker_info.workerId && !worker_info.participantId) {
-    alert(
-      "We couldn't find your worker ID. Please try clicking the link again.",
-    );
-    return;
-  }
+  console.log("worker_info", worker_info);
 
 
   let configuration_info = await getExperimentInfo({ worker_info });
@@ -60,7 +53,7 @@ import "../css/index.css";
   let logrocket_id;
   const intertrial_interval = 100; // in ms; bug in jspsych 6.0.x where this param isn't respected at jsPsych.init
   const tags = [open_tags, close_tags];
-  const image_dir = "src/images/jpg"; // `src/images/06F-21M/${condition}`; // "src/images/jpg";
+  const image_dir = "src/images/jpg/Modified Faces";
   const example_image = "src/images/examples/example_faces.jpg";
   const extension = ".jpg";
   const completion_code = generateCompletionCode("exa", "mple");
@@ -83,8 +76,7 @@ import "../css/index.css";
     In this study, you will see a series of faces.
     The images below are there to give you an idea
     of how varied these faces can be.
-    You will be asked to rate each face in terms of
-    how ${condition} they appear to be.
+    You will be asked to rate each face on the following: ${prompt}
     (You can make your response using a slider that
     appears below the image.)
     We are interested in your immediate,
@@ -126,7 +118,31 @@ import "../css/index.css";
     // return [example_trial];
 
     // slider example
-    const stimuli = getStimuli({ image_dir, num_stimuli: 10, extension });
+    const faceNumbers = [1,2,3,4,5,6,7,9,10,11,13,14,15,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,35,36,39,41,42,44,45,46,48,56,58,65,70,72,78,79,83,90,95,101,102,116,123,147,149,158,193,278,304,385,427];
+    const repeatFaceNumbers = [4,15,2,7,5,6,1,79,9,24];
+    const nonRepeatFaceNumbers = faceNumbers.filter(n => !repeatFaceNumbers.includes(n));
+
+    // Build 70-trial sequence: 10 repeat faces appear twice with at least 30 faces in between
+    const sequence = new Array(70).fill(null);
+    const shuffledRepeatFaces = _.shuffle(repeatFaceNumbers);
+    for (let i = 0; i < 10; i++) {
+      const face = `${image_dir}/${shuffledRepeatFaces[i]} copy.jpg`;
+      const validFirsts = _.range(0, 39).filter(pos => sequence[pos] === null);
+      const firstPos = _.sample(validFirsts);
+      const validSeconds = _.range(firstPos + 31, 70).filter(pos => sequence[pos] === null);
+      const secondPos = _.sample(validSeconds);
+      sequence[firstPos] = face;
+      sequence[secondPos] = face;
+    }
+    const shuffledNonRepeat = _.shuffle(nonRepeatFaceNumbers.map(n => `${image_dir}/${n} copy.jpg`));
+    let fillIdx = 0;
+    for (let i = 0; i < 70; i++) {
+      if (sequence[i] === null) {
+        sequence[i] = shuffledNonRepeat[fillIdx];
+        fillIdx++;
+      }
+    }
+    const stimuli = sequence;
     
     // Define condition-specific prompts and labels
     let prompt, labels;

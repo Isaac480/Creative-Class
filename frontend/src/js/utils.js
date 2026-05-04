@@ -39,8 +39,13 @@ export function getWorkerInfo() {
 
   }
 
-
-  return { ...jsPsych.turk.turkInfo(), platform };
+  // No platform detected — generate a direct-access participant ID
+  let participantId = localStorage.getItem("direct_participant_id");
+  if (!participantId) {
+    participantId = "direct_" + Math.random().toString(36).substring(2, 10) + "_" + Date.now();
+    localStorage.setItem("direct_participant_id", participantId);
+  }
+  return { workerId: participantId, assignmentId: "direct", hitId: "direct", platform: "direct" };
 }
 
 export async function getExperimentInfo({ worker_info }) {
@@ -62,6 +67,13 @@ export async function getExperimentInfo({ worker_info }) {
     worker_info = {
       worker_id: worker_info.participantId,
       hit_id: worker_info.projectId,
+      assignment_id: worker_info.assignmentId,
+      platform: worker_info.platform
+    };
+  } else if (worker_info.platform === "direct") {
+    worker_info = {
+      worker_id: worker_info.workerId,
+      hit_id: worker_info.hitId,
       assignment_id: worker_info.assignmentId,
       platform: worker_info.platform
     };
@@ -472,9 +484,9 @@ export async function saveData({
     };
   } else {
     worker_info = {
-      worker_id: worker_info.workerId,
-      hit_id: worker_info.hitId,
-      assignment_id: worker_info.assignmentId,
+      worker_id: worker_info.workerId || worker_info.worker_id,
+      hit_id: worker_info.hitId || worker_info.hit_id,
+      assignment_id: worker_info.assignmentId || worker_info.assignment_id,
     };
   }
 

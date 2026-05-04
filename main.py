@@ -78,6 +78,8 @@ redoc_url = "/redoc" if environment_type != "production" else None
 # Set up app
 app = FastAPI(openapi_url=openapi_url, docs_url=docs_url, redoc_url=redoc_url)
 
+SQLModel.metadata.create_all(engine)
+
 app.mount("/exp", StaticFiles(directory="./frontend", html=True), name="frontend")
 
 # Set up logging

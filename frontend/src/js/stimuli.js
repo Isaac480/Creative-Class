@@ -4,7 +4,11 @@ export function getStimuli({
   image_dir = "src/images",
   num_stimuli = 2,
   extension = ".jpg",
+  filenames = null,
 }) {
+  if (filenames) {
+    return _.map(filenames, (name) => `${image_dir}/${name}`);
+  }
   return _.map(
     _.range(1, num_stimuli + 1),
     (i) => `${image_dir}/${i}${extension}`,

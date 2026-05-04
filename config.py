@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     # Public settings -- seen by frontend
     debug_mode: bool = False
-    estimated_task_duration: str = "15 minutes"
+    estimated_task_duration: str = "20 minutes"
     compensation: str = "$2.50"
     experiment_title: str = "Example experiment"
     experiment_name: str = "example_experiment"
