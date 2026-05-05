@@ -7,33 +7,20 @@
         display: block;
         margin-bottom: 0.5rem;
     }
-    .s4-scale-row {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex-wrap: nowrap;
-    }
-    .s4-scale-label {
-        font-size: 0.85rem;
-        color: #555;
-        white-space: nowrap;
-        min-width: 0;
-    }
-    .s4-scale-label-left { text-align: right; }
-    .s4-scale-label-right { text-align: left; }
     .s4-btn-group {
         display: flex;
-        gap: 4px;
         flex-wrap: nowrap;
     }
     .s4-btn-group .s4-btn {
-        padding: 8px 14px;
+        padding: 6px 10px;
+        margin-right: 4px;
         border: 2px solid #6c757d;
         border-radius: 4px;
         background: #fff;
         color: #333;
         cursor: pointer;
-        font-size: 0.95rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
         transition: background 0.15s, border-color 0.15s;
     }
     .s4-btn-group .s4-btn:hover {
@@ -90,14 +77,14 @@
         "Conventional, uncreative."
     ];
 
-    var optionLabels = [
-        "Completely Disagree",
-        "Disagree",
-        "Somewhat Disagree",
-        "Neither Agree nor Disagree",
-        "Somewhat Agree",
-        "Agree",
-        "Completely Agree"
+    var options = [
+        "Completely Disagree (1)",
+        "Disagree (2)",
+        "Somewhat Disagree (3)",
+        "Neither Agree nor Disagree (4)",
+        "Somewhat Agree (5)",
+        "Agree (6)",
+        "Completely Agree (7)"
     ];
     var container = document.getElementById("s4-questions-container");
 
@@ -117,24 +104,16 @@
         input.className = "response s4-hidden-input";
         div.appendChild(input);
 
-        var scaleRow = document.createElement("div");
-        scaleRow.className = "s4-scale-row";
-
-        var leftLabel = document.createElement("span");
-        leftLabel.className = "s4-scale-label s4-scale-label-left";
-        leftLabel.textContent = "Completely Disagree";
-        scaleRow.appendChild(leftLabel);
-
         var btnGroup = document.createElement("div");
         btnGroup.className = "s4-btn-group";
 
-        optionLabels.forEach(function(opt, btnIdx) {
+        options.forEach(function(opt) {
             var btn = document.createElement("button");
             btn.type = "button";
             btn.className = "s4-btn";
-            btn.textContent = (btnIdx + 1);
+            btn.textContent = opt;
             btn.setAttribute("data-question", "Q" + qNum);
-            btn.setAttribute("data-value", opt + " (" + (btnIdx + 1) + ")");
+            btn.setAttribute("data-value", opt);
 
             btn.addEventListener("click", function() {
                 var hiddenInput = document.getElementById(this.getAttribute("data-question"));
@@ -149,7 +128,7 @@
                     hiddenInput.value = this.getAttribute("data-value");
                 }
 
-                var errorEl = this.closest(".s4-question").querySelector(".s4-validation-error");
+                var errorEl = this.parentNode.parentNode.querySelector(".s4-validation-error");
                 if (errorEl && hiddenInput.value) {
                     errorEl.style.display = "none";
                 }
@@ -158,14 +137,7 @@
             btnGroup.appendChild(btn);
         });
 
-        scaleRow.appendChild(btnGroup);
-
-        var rightLabel = document.createElement("span");
-        rightLabel.className = "s4-scale-label s4-scale-label-right";
-        rightLabel.textContent = "Completely Agree";
-        scaleRow.appendChild(rightLabel);
-
-        div.appendChild(scaleRow);
+        div.appendChild(btnGroup);
 
         var errorMsg = document.createElement("div");
         errorMsg.className = "s4-validation-error";
