@@ -71,12 +71,32 @@ import "../css/index.css";
     face_description_trial,
   ];
 
+  // Define condition-specific prompts and labels
+  let instructionPromptText, trialPrompt, trialLabels;
+  if (condition === "professional") {
+    instructionPromptText = "how likely you are to seek practical/professional advice from the person";
+    trialPrompt = `<h1 class="text-center mt-2 mb-4">How likely are you to seek practical/professional advice from this person?</h1>`;
+    trialLabels = ["Not likely", "Likely"];
+  } else if (condition === "emotional") {
+    instructionPromptText = "how likely you are to seek emotional advice from the person";
+    trialPrompt = `<h1 class="text-center mt-2 mb-4">How likely are you to seek emotional advice from this person?</h1>`;
+    trialLabels = ["Not likely", "Likely"];
+  } else if (condition === "smart") {
+    instructionPromptText = "how smart the person looks";
+    trialPrompt = `<h1 class="text-center mt-2 mb-4">How smart does this person look?</h1>`;
+    trialLabels = ["Not smart", "Very smart"];
+  } else {
+    instructionPromptText = `how ${condition} the face looks`;
+    trialPrompt = `<h1 class="text-center mt-2 mb-4">How ${condition} does this face look?</h1>`;
+    trialLabels = [`Not at all ${condition}`, `Extremely ${condition}`];
+  }
+
   const pages = [
     `<p class="text-left instructions">
     In this study, you will see a series of faces.
     The images below are there to give you an idea
     of how varied these faces can be.
-    You will be asked to rate each face on the following: ${prompt}
+    You will be asked to rate each face on the following: ${instructionPromptText}.
     (You can make your response using a slider that
     appears below the image.)
     We are interested in your immediate,
@@ -143,24 +163,7 @@ import "../css/index.css";
       }
     }
     const stimuli = sequence;
-    
-    // Define condition-specific prompts and labels
-    let prompt, labels;
-    if (condition === "professional") {
-      prompt = `<h1 class="text-center mt-2 mb-4">How likely are you to seek practical/professional advice from this person?</h1>`;
-      labels = ["Not likely", "Likely"];
-    } else if (condition === "emotional") {
-      prompt = `<h1 class="text-center mt-2 mb-4">How likely are you to seek emotional advice from this person?</h1>`;
-      labels = ["Not likely", "Likely"];
-    } else if (condition === "smart") {
-      prompt = `<h1 class="text-center mt-2 mb-4">How smart does this person look?</h1>`;
-      labels = ["Not smart", "Very smart"];
-    } else {
-      // Default fallback
-      prompt = `<h1 class="text-center mt-2 mb-4">How ${condition} does this face look?</h1>`;
-      labels = [`Not at all ${condition}`, `Extremely ${condition}`];
-    }
-    
+
     return generateRatingTrials({
       type: image_slider_response.info.name,
       stimuli,
@@ -169,8 +172,8 @@ import "../css/index.css";
       condition,
       slider_amount_visible,
       show_slider_delay,
-      labels,
-      prompt,
+      labels: trialLabels,
+      prompt: trialPrompt,
       response_ends_trial: true,
       experiment_phase: "main",
       post_trial_gap: intertrial_interval,

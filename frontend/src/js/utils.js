@@ -79,7 +79,10 @@ export async function getExperimentInfo({ worker_info }) {
     };
   }
 
-
+  const urlCondition = getUrlParameter("condition");
+  if (urlCondition) {
+    worker_info.condition = urlCondition;
+  }
 
   const response = await fetch("/init", {
     method: "POST",

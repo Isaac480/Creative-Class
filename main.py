@@ -267,6 +267,8 @@ def initialize_experiment(
     Creates a participant.
     """
 
+    participant_condition = participant_in.condition or condition
+
     # Check if participant already exists
     existing_participant = session.exec(
         select(Participant).where(Participant.worker_id == participant_in.worker_id)
@@ -274,20 +276,19 @@ def initialize_experiment(
 
     print("checked for existing participant")
     if existing_participant:
-        # Update existing participant with current condition if it's different
-        if existing_participant.condition != condition:
+        if existing_participant.condition != participant_condition:
             logger.info(
-                f"Participant {participant_in.worker_id} exists with condition '{existing_participant.condition}', updating to '{condition}'"
+                f"Participant {participant_in.worker_id} exists with condition '{existing_participant.condition}', updating to '{participant_condition}'"
             )
-            existing_participant.condition = condition
+            existing_participant.condition = participant_condition
             session.add(existing_participant)
             session.commit()
             session.refresh(existing_participant)
         else:
             logger.info(
-                f"Participant {participant_in.worker_id} already exists with correct condition '{condition}'."
+                f"Participant {participant_in.worker_id} already exists with correct condition '{participant_condition}'."
             )
-        
+
         experiment_configuration = ExperimentConfiguration(
             **experiment_configuration_dict,
             **existing_participant.dict(),
@@ -301,7 +302,7 @@ def initialize_experiment(
         hit_id=participant_in.hit_id,
         assignment_id=participant_in.assignment_id,
         platform=participant_in.platform,
-        condition=condition,
+        condition=participant_condition,
         status="started",
     )
 

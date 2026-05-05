@@ -63,6 +63,7 @@ class ParticipantIn(SQLModel):
     hit_id: str
     assignment_id: str
     platform: str
+    condition: Optional[str] = None
 
 
 class ParticipantOut(SQLModel):
