@@ -142,24 +142,33 @@ import "../css/index.css";
     const repeatFaceNumbers = [4,15,2,7,5,6,1,79,9,24];
     const nonRepeatFaceNumbers = faceNumbers.filter(n => !repeatFaceNumbers.includes(n));
 
-    // Build 70-trial sequence: 10 repeat faces appear twice with at least 30 faces in between
+    // Build 70-trial sequence: 10 repeat faces appear twice with at least 31 positions apart
     const sequence = new Array(70).fill(null);
+    const usedPositions = new Set();
     const shuffledRepeatFaces = _.shuffle(repeatFaceNumbers);
-    for (let i = 0; i < 10; i++) {
-      const face = `${image_dir}/${shuffledRepeatFaces[i]} copy.jpg`;
-      const validFirsts = _.range(0, 39).filter(pos => sequence[pos] === null);
-      const firstPos = _.sample(validFirsts);
-      const validSeconds = _.range(firstPos + 31, 70).filter(pos => sequence[pos] === null);
-      const secondPos = _.sample(validSeconds);
-      sequence[firstPos] = face;
-      sequence[secondPos] = face;
+
+    // Pick 10 unique first-appearance positions from 0-38
+    const firstPositions = _.sampleSize(_.range(0, 39), 10).sort((a, b) => a - b);
+    firstPositions.forEach((pos, i) => {
+      sequence[pos] = `${image_dir}/${shuffledRepeatFaces[i]} copy.jpg`;
+      usedPositions.add(pos);
+    });
+
+    // Place second appearances, processing tightest constraints first (highest firstPos)
+    const byDescFirst = _.range(0, 10).sort((a, b) => firstPositions[b] - firstPositions[a]);
+    for (const i of byDescFirst) {
+      const validPositions = _.range(firstPositions[i] + 31, 70).filter(p => !usedPositions.has(p));
+      const secondPos = _.sample(validPositions);
+      sequence[secondPos] = `${image_dir}/${shuffledRepeatFaces[i]} copy.jpg`;
+      usedPositions.add(secondPos);
     }
+
+    // Fill remaining slots with shuffled non-repeat faces
     const shuffledNonRepeat = _.shuffle(nonRepeatFaceNumbers.map(n => `${image_dir}/${n} copy.jpg`));
     let fillIdx = 0;
     for (let i = 0; i < 70; i++) {
       if (sequence[i] === null) {
-        sequence[i] = shuffledNonRepeat[fillIdx];
-        fillIdx++;
+        sequence[i] = shuffledNonRepeat[fillIdx++];
       }
     }
     const stimuli = sequence;
