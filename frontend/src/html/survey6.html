@@ -47,6 +47,12 @@
         <h3 class="mb-4">Work Characteristics</h3>
         <p class="text-muted mb-4">The questions in this section concern characteristics of the job itself. Using the scale below, please indicate the extent to which you agree with each statement. Remember to think only about your job itself, rather than your reactions to the job.</p>
 
+        <div class="s6-question">
+            <label for="jobDescription">Please describe your current job title and primary duties (imagined)</label>
+            <textarea id="jobDescription" name="jobDescription" class="form-control response" rows="3" required></textarea>
+            <div class="s6-validation-error" id="s6-job-error">Please provide a response.</div>
+        </div>
+
         <div id="s6-global-error">Please answer all questions before continuing.</div>
 
         <div id="s6-questions-container"></div>
@@ -138,9 +144,18 @@
 
     window.validateSurvey6Form = function() {
         var allAnswered = true;
-        var inputs = container.querySelectorAll(".s6-hidden-input");
         var globalError = document.getElementById("s6-global-error");
 
+        var jobField = document.getElementById("jobDescription");
+        var jobError = document.getElementById("s6-job-error");
+        if (!jobField.value.trim()) {
+            allAnswered = false;
+            jobError.style.display = "block";
+        } else {
+            jobError.style.display = "none";
+        }
+
+        var inputs = container.querySelectorAll(".s6-hidden-input");
         inputs.forEach(function(input) {
             var questionDiv = input.closest(".s6-question");
             var errorEl = questionDiv.querySelector(".s6-validation-error");
@@ -154,10 +169,6 @@
 
         if (!allAnswered) {
             globalError.style.display = "block";
-            var firstUnanswered = container.querySelector(".s6-validation-error[style*='block']");
-            if (firstUnanswered) {
-                firstUnanswered.closest(".s6-question").scrollIntoView({ behavior: "smooth", block: "center" });
-            }
         } else {
             globalError.style.display = "none";
         }
