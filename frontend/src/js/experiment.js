@@ -207,20 +207,20 @@ export default async function runExperiment({
     },
   };
 
-  const survey = {
+  const demographics = {
     type: render_mustache_template.info.name,
-    url: `${template_dir}/survey.html`,
+    url: `${template_dir}/demographics.html`,
     cont_btn,
     post_trial_gap: intertrial_interval, // 0,
     data: {
-      form_name: "surveyForm",
-      form_id: "#surveyForm",
+      form_name: "demographicsForm",
+      form_id: "#demographicsForm",
       experiment_phase: "survey",
     },
     render_data: {},
     tags,
     on_load_complete_callbacks: {
-      setupFormValidation: [setupFormValidation, "surveyForm"],
+      setupFormValidation: [setupFormValidation, "demographicsForm"],
     },
     check_fn() {
       const valid = $(this.data.form_id).valid();
@@ -245,15 +245,15 @@ export default async function runExperiment({
     },
   };
 
-  const survey3 = {
+  const kaiSurvey = {
     type: render_mustache_template.info.name,
-    url: `${template_dir}/survey3.html`,
+    url: `${template_dir}/kai-survey.html`,
     cont_btn,
     post_trial_gap: intertrial_interval,
     execute_script: true,
     data: {
-      form_name: "survey3Form",
-      form_id: "#survey3Form",
+      form_name: "kaiSurveyForm",
+      form_id: "#kaiSurveyForm",
       experiment_phase: "survey",
     },
     tags,
@@ -280,20 +280,20 @@ export default async function runExperiment({
     },
   };
 
-  const survey4 = {
+  const big5Personality = {
     type: render_mustache_template.info.name,
-    url: `${template_dir}/survey4.html`,
+    url: `${template_dir}/big5-personality.html`,
     cont_btn,
     post_trial_gap: intertrial_interval,
     execute_script: true,
     data: {
-      form_name: "survey4Form",
-      form_id: "#survey4Form",
+      form_name: "big5PersonalityForm",
+      form_id: "#big5PersonalityForm",
       experiment_phase: "survey",
     },
     tags,
     check_fn() {
-      const valid = window.validateSurvey4Form();
+      const valid = window.validateBig5PersonalityForm();
       if (valid) {
         this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
       }
@@ -315,20 +315,20 @@ export default async function runExperiment({
     },
   };
 
-  const survey5 = {
+  const creativePerceptions = {
     type: render_mustache_template.info.name,
-    url: `${template_dir}/survey5.html`,
+    url: `${template_dir}/creative-perceptions.html`,
     cont_btn,
     post_trial_gap: intertrial_interval,
     execute_script: true,
     data: {
-      form_name: "survey5Form",
-      form_id: "#survey5Form",
+      form_name: "creativePerceptionsForm",
+      form_id: "#creativePerceptionsForm",
       experiment_phase: "survey",
     },
     tags,
     check_fn() {
-      const valid = window.validateSurvey5Form();
+      const valid = window.validateCreativePerceptionsForm();
       if (valid) {
         this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
       }
@@ -350,20 +350,20 @@ export default async function runExperiment({
     },
   };
 
-  const survey6 = {
+  const workHabits = {
     type: render_mustache_template.info.name,
-    url: `${template_dir}/survey6.html`,
+    url: `${template_dir}/work-habits.html`,
     cont_btn,
     post_trial_gap: intertrial_interval,
     execute_script: true,
     data: {
-      form_name: "survey6Form",
-      form_id: "#survey6Form",
+      form_name: "workHabitsForm",
+      form_id: "#workHabitsForm",
       experiment_phase: "survey",
     },
     tags,
     check_fn() {
-      const valid = window.validateSurvey6Form();
+      const valid = window.validateWorkHabitsForm();
       if (valid) {
         this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
       }
@@ -382,37 +382,6 @@ export default async function runExperiment({
         platform,
         status: "working_finished_survey",
       });
-    },
-  };
-
-  const kai_questionnaire = {
-    type: render_mustache_template.info.name,
-    url: `${template_dir}/kai-questionnaire.html`,
-    cont_btn,
-    post_trial_gap: intertrial_interval,
-    data: {
-      form_name: "kaiForm",
-      form_id: "#kaiForm",
-      experiment_phase: "kai_questionnaire",
-    },
-    tags,
-    check_fn() {
-      return $(this.data.form_id).valid();
-    },
-    on_start() {
-      updateParticipantStatus({
-        worker_info,
-        platform,
-        status: "working_finished_task",
-      });
-    },
-    on_finish(data) {
-      updateParticipantStatus({
-        worker_info,
-        platform,
-        status: "working_finished_kai_questionnaire",
-      });
-      data.form_data = JSON.stringify(getFormData(this.data.form_id));
     },
   };
 
@@ -438,12 +407,11 @@ export default async function runExperiment({
     attrition,
     instructions,
     ...trials,
-    survey3,
-    survey4,
-    survey5,
-    survey6,
-    survey,
-    //kai_questionnaire,
+    creativePerceptions,
+    workHabits,
+    kaiSurvey,
+    big5Personality,
+    demographics,
     debriefing,
     fullscreen_end,
   ];

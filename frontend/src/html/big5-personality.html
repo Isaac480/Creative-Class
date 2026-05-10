@@ -46,8 +46,8 @@
     }
 </style>
 
-<div id="survey4FormContainer" class="container my-5 text-left">
-    <form id="survey4Form" name="survey4Form" onsubmit="return false">
+<div id="big5PersonalityFormContainer" class="container my-5 text-left">
+    <form id="big5PersonalityForm" name="big5PersonalityForm" onsubmit="return false">
 
         <h3 class="mb-4">BIG 5 PERSONALITY TEST</h3>
         <p class="text-muted mb-4">Here are a number of personality traits that may or may not apply to you. Please indicate the extent to which you agree or disagree with each statement. You should rate the extent to which the pair of traits applies to you, even if one characteristic applies more strongly than the other.</p>
@@ -56,7 +56,7 @@
 
         <div id="s4-questions-container"></div>
 
-        <div id="survey4FormButtonContainer" class="container text-center my-5">
+        <div id="big5PersonalityFormButtonContainer" class="container text-center my-5">
             <button id="continueButton" class="btn btn-lg btn-primary">Next</button>
         </div>
     </form>
@@ -147,7 +147,7 @@
         container.appendChild(div);
     });
 
-    window.validateSurvey4Form = function() {
+    window.validateBig5PersonalityForm = function() {
         var allAnswered = true;
         var inputs = container.querySelectorAll(".s4-hidden-input");
         var globalError = document.getElementById("s4-global-error");

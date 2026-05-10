@@ -41,8 +41,8 @@
     }
 </style>
 
-<div id="survey6FormContainer" class="container my-5 text-left">
-    <form id="survey6Form" name="survey6Form" onsubmit="return false">
+<div id="workHabitsFormContainer" class="container my-5 text-left">
+    <form id="workHabitsForm" name="workHabitsForm" onsubmit="return false">
 
         <h3 class="mb-4">Work Characteristics</h3>
         <p class="text-muted mb-4">The questions in this section concern characteristics of the job itself. Using the scale below, please indicate the extent to which you agree with each statement. Remember to think only about your job itself, rather than your reactions to the job.</p>
@@ -57,7 +57,7 @@
 
         <div id="s6-questions-container"></div>
 
-        <div id="survey6FormButtonContainer" class="container text-center my-5">
+        <div id="workHabitsFormButtonContainer" class="container text-center my-5">
             <button id="continueButton" class="btn btn-lg btn-primary">Next</button>
         </div>
     </form>
@@ -142,7 +142,7 @@
         container.appendChild(div);
     });
 
-    window.validateSurvey6Form = function() {
+    window.validateWorkHabitsForm = function() {
         var allAnswered = true;
         var globalError = document.getElementById("s6-global-error");
 
