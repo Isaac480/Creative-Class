@@ -135,6 +135,101 @@
                 minlength="2" maxlength="100">
         </div>
     
+        <div class="form-group">
+            <label for="religion">
+                What is your religion?
+            </label>
+            <select required class="form-control response" id="religion" name="religion">
+                <option value="NA"></option>
+                <option>Christianity</option>
+                <option>Islam</option>
+                <option>Judaism</option>
+                <option>Buddhism</option>
+                <option>Hinduism</option>
+                <option>Agnosticism</option>
+                <option>Atheism</option>
+                <option>Other/prefer not to say</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="educationLevel">
+                What is the highest level of education you have completed?
+            </label>
+            <select required class="form-control response" id="educationLevel" name="educationLevel">
+                <option value="NA"></option>
+                <option>Less than high school</option>
+                <option>High school diploma or GED</option>
+                <option>Some college, no degree</option>
+                <option>Associate degree</option>
+                <option>Bachelor's degree</option>
+                <option>Master's degree</option>
+                <option>Professional degree (e.g., JD, MD)</option>
+                <option>Doctoral degree (e.g., PhD, EdD)</option>
+                <option>Other</option>
+                <option>Prefer not to answer</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="politicalEconomic">
+                In terms of economic issues, how would you describe your political views?
+            </label>
+            <select required class="form-control response" id="politicalEconomic" name="politicalEconomic">
+                <option value="NA"></option>
+                <option>Very liberal</option>
+                <option>Liberal</option>
+                <option>Somewhat liberal</option>
+                <option>Moderate / Middle of the road</option>
+                <option>Somewhat conservative</option>
+                <option>Conservative</option>
+                <option>Very conservative</option>
+                <option>Prefer not to answer</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="politicalSocial">
+                In terms of social or cultural issues, how would you describe your political views?
+            </label>
+            <select required class="form-control response" id="politicalSocial" name="politicalSocial">
+                <option value="NA"></option>
+                <option>Very liberal</option>
+                <option>Liberal</option>
+                <option>Somewhat liberal</option>
+                <option>Moderate / Middle of the road</option>
+                <option>Somewhat conservative</option>
+                <option>Conservative</option>
+                <option>Very conservative</option>
+                <option>Prefer not to answer</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="socialStatusLadder">
+                Imagine a ladder representing where people stand in society. At the top are people who are best off in terms of money, education, and respected jobs. At the bottom are people who are worst off. Where would you place yourself on this ladder?
+            </label>
+            <div class="d-flex justify-content-between">
+                <small class="text-muted">1 — Lowest standing</small>
+                <small class="text-muted">10 — Highest standing</small>
+            </div>
+            <input required class="form-control-range response" id="socialStatusLadder"
+                name="socialStatusLadder" type="range" min="1" max="10" step="1"
+                style="width: 100%; margin-top: 0.5rem;">
+            <div class="text-center mt-1">
+                <small>Selected: <span id="socialStatusLadderDisplay">—</span></small>
+            </div>
+            <script>
+                (function () {
+                    var slider = document.getElementById('socialStatusLadder');
+                    var display = document.getElementById('socialStatusLadderDisplay');
+                    slider.addEventListener('input', function () {
+                        display.textContent = slider.value;
+                    });
+                })();
+            </script>
+        </div>
+
         <div id="demographicsFormButtonContainer" class="container text-center my-5">
             <button id="continueButton" class="btn btn-lg btn-primary">Next</button>
         </div>

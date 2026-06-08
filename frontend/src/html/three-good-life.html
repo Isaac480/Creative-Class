@@ -1,0 +1,186 @@
+<!-- Three Good Lives Survey -->
+<style>
+    .tgl-question {
+        margin-bottom: 1.5rem;
+    }
+    .tgl-question label {
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    .tgl-btn-group {
+        display: flex;
+        flex-wrap: nowrap;
+    }
+    .tgl-btn-group .tgl-btn {
+        padding: 6px 10px;
+        margin-right: 4px;
+        border: 2px solid #6c757d;
+        border-radius: 4px;
+        background: #fff;
+        color: #333;
+        cursor: pointer;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        transition: background 0.15s, border-color 0.15s;
+    }
+    .tgl-btn-group .tgl-btn:hover {
+        background: #e9ecef;
+    }
+    .tgl-btn-group .tgl-btn.active {
+        background: #2c3e50;
+        color: #fff;
+        border-color: #2c3e50;
+    }
+    .tgl-validation-error {
+        color: #e74c3c;
+        font-size: 0.9rem;
+        margin-top: 0.3rem;
+        display: none;
+    }
+    #tgl-global-error {
+        color: #e74c3c;
+        font-weight: bold;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+</style>
+
+<div id="threeGoodLifeFormContainer" class="container my-5 text-left">
+    <form id="threeGoodLifeForm" name="threeGoodLifeForm" onsubmit="return false">
+
+        <p class="mb-3">Please indicate the degree to which you agree or disagree with each of the following statements using the 1–7 point scale below.</p>
+        <p class="mb-4"><em>Here, a psychologically rich life refers to a life that is eventful, interesting, varied, and full of surprises.</em></p>
+
+        <p class="mb-4"><strong>My life has been...</strong></p>
+
+        <div id="tgl-global-error">Please answer all questions before continuing.</div>
+
+        <div id="tgl-questions-container"></div>
+
+        <div id="threeGoodLifeFormButtonContainer" class="container text-center my-5">
+            <button id="continueButton" class="btn btn-lg btn-primary">Next</button>
+        </div>
+    </form>
+</div>
+
+<script>
+(function() {
+    var questions = [
+        { label: "interesting",         name: "tgl_interesting" },
+        { label: "dramatic",            name: "tgl_dramatic" },
+        { label: "psychologically rich",name: "tgl_psychologically_rich" },
+        { label: "uneventful",          name: "tgl_uneventful" },
+        { label: "monotonous",          name: "tgl_monotonous" },
+        { label: "happy",               name: "tgl_happy" },
+        { label: "enjoyable",           name: "tgl_enjoyable" },
+        { label: "comfortable",         name: "tgl_comfortable" },
+        { label: "unstable",            name: "tgl_unstable" },
+        { label: "sad",                 name: "tgl_sad" },
+        { label: "meaningful",          name: "tgl_meaningful" },
+        { label: "fulfilling",          name: "tgl_fulfilling" },
+        { label: "purposeful",          name: "tgl_purposeful" },
+        { label: "meaningless",         name: "tgl_meaningless" },
+        { label: "disorganized",        name: "tgl_disorganized" }
+    ];
+
+    var options = [
+        "Completely Disagree (1)",
+        "Disagree (2)",
+        "Somewhat Disagree (3)",
+        "Neither Agree nor Disagree (4)",
+        "Somewhat Agree (5)",
+        "Agree (6)",
+        "Completely Agree (7)"
+    ];
+
+    var container = document.getElementById("tgl-questions-container");
+
+    questions.forEach(function(q, i) {
+        var div = document.createElement("div");
+        div.className = "tgl-question";
+
+        var label = document.createElement("label");
+        label.textContent = (i + 1) + ". My life has been... " + q.label;
+        div.appendChild(label);
+
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = q.name;
+        input.id = q.name;
+        input.className = "response tgl-hidden-input";
+        div.appendChild(input);
+
+        var btnGroup = document.createElement("div");
+        btnGroup.className = "tgl-btn-group";
+
+        options.forEach(function(opt) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "tgl-btn";
+            btn.textContent = opt;
+            btn.setAttribute("data-question", q.name);
+            btn.setAttribute("data-value", opt);
+
+            btn.addEventListener("click", function() {
+                var hiddenInput = document.getElementById(this.getAttribute("data-question"));
+                var siblings = this.parentNode.querySelectorAll(".tgl-btn");
+
+                if (this.classList.contains("active")) {
+                    this.classList.remove("active");
+                    hiddenInput.value = "";
+                } else {
+                    siblings.forEach(function(s) { s.classList.remove("active"); });
+                    this.classList.add("active");
+                    hiddenInput.value = this.getAttribute("data-value");
+                }
+
+                var errorEl = this.parentNode.parentNode.querySelector(".tgl-validation-error");
+                if (errorEl && hiddenInput.value) {
+                    errorEl.style.display = "none";
+                }
+            });
+
+            btnGroup.appendChild(btn);
+        });
+
+        div.appendChild(btnGroup);
+
+        var errorMsg = document.createElement("div");
+        errorMsg.className = "tgl-validation-error";
+        errorMsg.textContent = "Please select an option.";
+        div.appendChild(errorMsg);
+
+        container.appendChild(div);
+    });
+
+    window.validateThreeGoodLifeForm = function() {
+        var allAnswered = true;
+        var inputs = container.querySelectorAll(".tgl-hidden-input");
+        var globalError = document.getElementById("tgl-global-error");
+
+        inputs.forEach(function(input) {
+            var questionDiv = input.closest(".tgl-question");
+            var errorEl = questionDiv.querySelector(".tgl-validation-error");
+            if (!input.value) {
+                allAnswered = false;
+                errorEl.style.display = "block";
+            } else {
+                errorEl.style.display = "none";
+            }
+        });
+
+        if (!allAnswered) {
+            globalError.style.display = "block";
+            var firstUnanswered = container.querySelector(".tgl-validation-error[style*='block']");
+            if (firstUnanswered) {
+                firstUnanswered.closest(".tgl-question").scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+        } else {
+            globalError.style.display = "none";
+        }
+
+        return allAnswered;
+    };
+})();
+</script>

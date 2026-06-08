@@ -704,6 +704,32 @@ export function setupFormValidation(formName) {
         required: true,
         minlength: 2,
       },
+
+      religion: {
+        required: true,
+        selectValidEntry: true,
+      },
+
+      educationLevel: {
+        required: true,
+        selectValidEntry: true,
+      },
+
+      politicalEconomic: {
+        required: true,
+        selectValidEntry: true,
+      },
+
+      politicalSocial: {
+        required: true,
+        selectValidEntry: true,
+      },
+
+      socialStatusLadder: {
+        required: true,
+        min: 1,
+        max: 10,
+      },
     },
 
     messages: {
@@ -728,6 +754,22 @@ export function setupFormValidation(formName) {
 
       gender: {
         required: "Please enter your self-identifed gender",
+      },
+
+      religion: {
+        required: "Please select your religion",
+      },
+
+      educationLevel: {
+        required: "Please select your highest level of education",
+      },
+
+      politicalEconomic: {
+        required: "Please select your political views on economic issues",
+      },
+
+      politicalSocial: {
+        required: "Please select your political views on social/cultural issues",
       },
     },
 

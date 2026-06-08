@@ -169,6 +169,27 @@ export default async function runExperiment({
     fullscreen_mode: false,
   };
 
+  const captcha = {
+    type: render_mustache_template.info.name,
+    url: `${template_dir}/captcha.html`,
+    cont_btn,
+    post_trial_gap: intertrial_interval,
+    execute_script: true,
+    data: {
+      form_name: "captchaForm",
+      form_id: "#captchaForm",
+      experiment_phase: "captcha",
+    },
+    tags,
+    check_fn() {
+      const valid = window.validateCaptchaForm();
+      if (valid) {
+        this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
+      }
+      return valid;
+    },
+  };
+
   const attrition = {
     type: render_mustache_template.info.name,
     url: `${template_dir}/attrition.html`,
@@ -203,6 +224,41 @@ export default async function runExperiment({
         worker_info,
         platform,
         status: "working_finished_instructions",
+      });
+    },
+  };
+
+  const threeGoodLife = {
+    type: render_mustache_template.info.name,
+    url: `${template_dir}/three-good-life.html`,
+    cont_btn,
+    post_trial_gap: intertrial_interval,
+    execute_script: true,
+    data: {
+      form_name: "threeGoodLifeForm",
+      form_id: "#threeGoodLifeForm",
+      experiment_phase: "survey",
+    },
+    tags,
+    check_fn() {
+      const valid = window.validateThreeGoodLifeForm();
+      if (valid) {
+        this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
+      }
+      return valid;
+    },
+    on_start() {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_task",
+      });
+    },
+    on_finish() {
+      updateParticipantStatus({
+        worker_info,
+        platform,
+        status: "working_finished_survey",
       });
     },
   };
@@ -407,10 +463,12 @@ export default async function runExperiment({
     attrition,
     instructions,
     ...trials,
+    captcha,
     creativePerceptions,
     workHabits,
     kaiSurvey,
     big5Personality,
+    threeGoodLife,
     demographics,
     debriefing,
     fullscreen_end,

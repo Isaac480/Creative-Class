@@ -39,6 +39,12 @@
         margin-bottom: 1rem;
         display: none;
     }
+    .kai-attention-check {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 12px 16px;
+        border-radius: 4px;
+    }
 </style>
 
 <div id="kaiSurveyFormContainer" class="container my-5 text-left">
@@ -98,19 +104,21 @@
     var options = ["Very Hard", "Hard", "Easy", "Very Easy"];
     var container = document.getElementById("kai-questions-container");
 
-    questions.forEach(function(text, i) {
-        var qNum = i + 1;
+    // Attention check is inserted after question 16 (1-indexed), i.e. after array index 15
+    var ATTENTION_AFTER_INDEX = 15;
+
+    function buildRegularQuestion(text, fieldName, displayNum) {
         var div = document.createElement("div");
         div.className = "kai-question";
 
         var label = document.createElement("label");
-        label.textContent = qNum + ". " + text;
+        label.textContent = displayNum + ". " + text;
         div.appendChild(label);
 
         var input = document.createElement("input");
         input.type = "hidden";
-        input.name = "Q" + qNum;
-        input.id = "Q" + qNum;
+        input.name = fieldName;
+        input.id = fieldName;
         input.className = "response kai-hidden-input";
         div.appendChild(input);
 
@@ -122,13 +130,12 @@
             btn.type = "button";
             btn.className = "kai-btn";
             btn.textContent = opt;
-            btn.setAttribute("data-question", "Q" + qNum);
+            btn.setAttribute("data-question", fieldName);
             btn.setAttribute("data-value", opt);
 
             btn.addEventListener("click", function() {
                 var hiddenInput = document.getElementById(this.getAttribute("data-question"));
                 var siblings = this.parentNode.querySelectorAll(".kai-btn");
-
                 if (this.classList.contains("active")) {
                     this.classList.remove("active");
                     hiddenInput.value = "";
@@ -137,11 +144,8 @@
                     this.classList.add("active");
                     hiddenInput.value = this.getAttribute("data-value");
                 }
-
                 var errorEl = this.parentNode.parentNode.querySelector(".kai-validation-error");
-                if (errorEl && hiddenInput.value) {
-                    errorEl.style.display = "none";
-                }
+                if (errorEl && hiddenInput.value) { errorEl.style.display = "none"; }
             });
 
             btnGroup.appendChild(btn);
@@ -154,15 +158,84 @@
         errorMsg.textContent = "Please select an option.";
         div.appendChild(errorMsg);
 
-        container.appendChild(div);
+        return div;
+    }
+
+    function buildAttentionCheck(displayNum) {
+        var div = document.createElement("div");
+        div.className = "kai-question kai-attention-check";
+
+        var label = document.createElement("label");
+        label.textContent = displayNum + ". Attention check: For this item only, please select “Easy.”";
+        div.appendChild(label);
+
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "kai_attention";
+        input.id = "kai_attention";
+        input.className = "response";
+        div.appendChild(input);
+
+        var btnGroup = document.createElement("div");
+        btnGroup.className = "kai-btn-group";
+
+        options.forEach(function(opt) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "kai-btn";
+            btn.textContent = opt;
+            btn.setAttribute("data-question", "kai_attention");
+            btn.setAttribute("data-value", opt);
+
+            btn.addEventListener("click", function() {
+                var hiddenInput = document.getElementById("kai_attention");
+                var siblings = this.parentNode.querySelectorAll(".kai-btn");
+                if (this.classList.contains("active")) {
+                    this.classList.remove("active");
+                    hiddenInput.value = "";
+                } else {
+                    siblings.forEach(function(s) { s.classList.remove("active"); });
+                    this.classList.add("active");
+                    hiddenInput.value = this.getAttribute("data-value");
+                }
+                var errorEl = this.parentNode.parentNode.querySelector(".kai-validation-error");
+                if (errorEl) { errorEl.style.display = "none"; }
+            });
+
+            btnGroup.appendChild(btn);
+        });
+
+        div.appendChild(btnGroup);
+
+        var errorMsg = document.createElement("div");
+        errorMsg.className = "kai-validation-error";
+        errorMsg.textContent = "Please select “Easy” for this attention check item.";
+        div.appendChild(errorMsg);
+
+        return div;
+    }
+
+    var displayNum = 0;
+    questions.forEach(function(text, i) {
+        displayNum++;
+
+        // Insert attention check after question at ATTENTION_AFTER_INDEX
+        if (i === ATTENTION_AFTER_INDEX) {
+            container.appendChild(buildAttentionCheck(displayNum));
+            displayNum++;
+        }
+
+        var fieldName = "Q" + (i + 1);
+        container.appendChild(buildRegularQuestion(text, fieldName, displayNum));
     });
 
     window.validateKaiForm = function() {
         var allAnswered = true;
-        var inputs = container.querySelectorAll(".kai-hidden-input");
         var globalError = document.getElementById("kai-global-error");
 
-        inputs.forEach(function(input) {
+        // Validate regular questions
+        var regularInputs = container.querySelectorAll(".kai-hidden-input");
+        regularInputs.forEach(function(input) {
             var questionDiv = input.closest(".kai-question");
             var errorEl = questionDiv.querySelector(".kai-validation-error");
             if (!input.value) {
@@ -173,11 +246,22 @@
             }
         });
 
+        // Validate attention check specifically
+        var attentionInput = document.getElementById("kai_attention");
+        var attentionDiv = attentionInput.closest(".kai-question");
+        var attentionError = attentionDiv.querySelector(".kai-validation-error");
+        if (attentionInput.value !== "Easy") {
+            allAnswered = false;
+            attentionError.style.display = "block";
+        } else {
+            attentionError.style.display = "none";
+        }
+
         if (!allAnswered) {
             globalError.style.display = "block";
-            var firstUnanswered = container.querySelector(".kai-validation-error[style*='block']");
-            if (firstUnanswered) {
-                firstUnanswered.closest(".kai-question").scrollIntoView({ behavior: "smooth", block: "center" });
+            var firstError = container.querySelector(".kai-validation-error[style*='block']");
+            if (firstError) {
+                firstError.closest(".kai-question").scrollIntoView({ behavior: "smooth", block: "center" });
             }
         } else {
             globalError.style.display = "none";
