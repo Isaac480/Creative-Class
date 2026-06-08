@@ -5,8 +5,8 @@
             Please type the highlighted word, and only the highlighted word, in the response box below.
             Please be sure that capitalization is identical to the highlighted word.
         </p>
-        <p class="text-center my-4" style="font-size: 1.1rem;">
-            <mark id="captcha-word" style="background-color: #85fbe4; padding: 2px 6px; font-weight: bold;"></mark>
+        <p class="text-center my-4" style="font-size: 1.1rem; letter-spacing: 0.05em;">
+            <span id="captcha-decoy-left" style="margin-right: 1rem;"></span><mark id="captcha-word" style="background-color: #85fbe4; padding: 2px 6px; font-weight: bold;"></mark><span id="captcha-decoy-right" style="margin-left: 1rem;"></span>
         </p>
         <div class="d-flex justify-content-center">
             <input id="captchaAnswer" name="captchaAnswer" type="text" class="form-control response"
@@ -27,8 +27,17 @@
         "River", "FOREST", "candle", "Bridge", "PUZZLE",
         "winter", "Stone", "CLOUD", "table", "Bright"
     ];
-    var word = words[Math.floor(Math.random() * words.length)];
+    // Pick target and two distinct decoys
+    var idx = Math.floor(Math.random() * words.length);
+    var word = words[idx];
+    var remaining = words.filter(function(_, i) { return i !== idx; });
+    remaining.sort(function() { return Math.random() - 0.5; });
+    var decoyLeft = remaining[0];
+    var decoyRight = remaining[1];
+
     document.getElementById("captcha-word").textContent = word;
+    document.getElementById("captcha-decoy-left").textContent = decoyLeft;
+    document.getElementById("captcha-decoy-right").textContent = decoyRight;
     window._captchaWord = word;
 
     window.validateCaptchaForm = function () {
