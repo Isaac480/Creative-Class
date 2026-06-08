@@ -39,12 +39,6 @@
         margin-bottom: 1rem;
         display: none;
     }
-    .kai-attention-check {
-        background-color: #fff3cd;
-        border-left: 4px solid #ffc107;
-        padding: 12px 16px;
-        border-radius: 4px;
-    }
 </style>
 
 <div id="kaiSurveyFormContainer" class="container my-5 text-left">
@@ -163,10 +157,10 @@
 
     function buildAttentionCheck(displayNum) {
         var div = document.createElement("div");
-        div.className = "kai-question kai-attention-check";
+        div.className = "kai-question";
 
         var label = document.createElement("label");
-        label.textContent = displayNum + ". Attention check: For this item only, please select “Easy.”";
+        label.textContent = displayNum + ". For this item only, please select “Easy.”";
         div.appendChild(label);
 
         var input = document.createElement("input");
@@ -207,9 +201,9 @@
 
         div.appendChild(btnGroup);
 
-        var errorMsg = document.createElement("div");
-        errorMsg.className = "kai-validation-error";
-        errorMsg.textContent = "Please select “Easy” for this attention check item.";
+        var errorMsg = document.createElement(“div”);
+        errorMsg.className = “kai-validation-error”;
+        errorMsg.textContent = “Please select an option.”;
         div.appendChild(errorMsg);
 
         return div;
@@ -246,11 +240,11 @@
             }
         });
 
-        // Validate attention check specifically
+        // Validate attention check (just requires a selection)
         var attentionInput = document.getElementById("kai_attention");
         var attentionDiv = attentionInput.closest(".kai-question");
         var attentionError = attentionDiv.querySelector(".kai-validation-error");
-        if (attentionInput.value !== "Easy") {
+        if (!attentionInput.value) {
             allAnswered = false;
             attentionError.style.display = "block";
         } else {
