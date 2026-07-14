@@ -2,6 +2,9 @@ from sqlmodel import SQLModel, create_engine
 import os
 
 import re
+from dotenv import load_dotenv
+
+load_dotenv()
 
 uri = os.getenv("DATABASE_URL")  # or other relevant config var
 if uri and uri.startswith("postgres://"):

@@ -1,0 +1,414 @@
+---
+title: "Face Judgement & Survey Data Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Step 1: Merge survey data with face judgement data
+
+Read in the two exported CSVs.
+
+```{r read-data}
+survey_data <- read_csv("/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/survey_data.csv", show_col_types = FALSE)
+face_trials <- read_csv("/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/face_judgement_trials.csv", show_col_types = FALSE)
+```
+
+Extract the face number from the stimulus path (e.g. `".../13 copy.jpg"` -> `"13"`).
+
+```{r extract-face-num}
+face_trials <- face_trials %>%
+  mutate(face_num = str_extract(stimulus, "(?<=Faces/)\\d+(?= copy\\.jpg)"))
+
+stopifnot(!any(is.na(face_trials$face_num)))
+```
+
+Each participant sees 60 unique faces and 10 of those are shown twice (70 trials
+total). Within each participant, label the first showing of a face `face_<num>`
+and the second showing `face_<num>_repeat`, then pivot to one row per participant.
+
+```{r pivot-wide}
+face_wide <- face_trials %>%
+  arrange(participant_id, trial_index) %>%
+  group_by(participant_id, face_num) %>%
+  mutate(occurrence = row_number()) %>%
+  ungroup() %>%
+  mutate(col_name = if_else(
+    occurrence == 1,
+    paste0("face_", face_num),
+    paste0("face_", face_num, "_repeat")
+  )) %>%
+  select(participant_id, col_name, rating) %>%
+  pivot_wider(names_from = col_name, values_from = rating)
+```
+
+Merge onto the survey data, one row per participant.
+
+```{r merge}
+merged_data <- survey_data %>%
+  left_join(face_wide, by = "participant_id")
+```
+
+Sanity check: every participant should contribute 70 face columns (60 unique +
+10 repeats), and row count should match `survey_data`.
+
+```{r check-merge}
+face_cols <- merged_data %>% select(starts_with("face_")) %>% names()
+length(face_cols)        # expect 70
+nrow(merged_data) == nrow(survey_data)
+```
+
+### Reconcile renamed survey columns
+
+The survey instruments were renamed partway through data collection (commit
+`bc3bed8`): `survey3`->`kaiSurvey`, `survey4`->`big5Personality`,
+`survey5`->`creativePerceptions`, `survey6`->`workHabits`, and the original
+`survey_*` demographics fields -> `demographics_*`. Question numbering/order
+was unchanged, only the prefix. Participants who took part before the rename
+have their answers under the old prefix; participants after have them under
+the new prefix, so each participant has only one of the two populated. Coalesce
+each old/new pair into the new (current) column name and drop the old one.
+
+```{r reconcile-renamed-columns}
+demo_suffixes <- c("age", "comments", "estimatedPerformance", "gender",
+                    "interruption", "issues", "participatedBefore", "race",
+                    "seriousness", "sex", "strategies")
+
+old_to_new <- c(
+  setNames(paste0("kaiSurvey_Q", 1:33), paste0("survey3_Q", 1:33)),
+  setNames(paste0("big5Personality_Q", 1:10), paste0("survey4_Q", 1:10)),
+  setNames(paste0("creativePerceptions_Q", 1:11), paste0("survey5_Q", 1:11)),
+  setNames(c(paste0("workHabits_Q", 1:12), "workHabits_jobDescription"),
+           c(paste0("survey6_Q", 1:12), "survey6_jobDescription")),
+  setNames(paste0("demographics_", demo_suffixes), paste0("survey_", demo_suffixes))
+)
+
+for (old_col in names(old_to_new)) {
+  new_col <- old_to_new[[old_col]]
+  merged_data[[new_col]] <- coalesce(merged_data[[new_col]], merged_data[[old_col]])
+}
+
+merged_data <- merged_data %>% select(-all_of(names(old_to_new)))
+```
+
+```{r write-merged}
+write_csv(merged_data, "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/merged_survey_face_data.csv")
+```
+
+## Step 2: Filter to participants 7, 8, 9, 10
+
+```{r filter}
+filtered_data <- merged_data %>%
+  filter(participant_id %in% c(7, 8, 9, 10))
+
+filtered_data %>% select(participant_id)
+```
+
+## Step 3: (skipped — data kept anonymized)
+
+Participant data is kept anonymized; no name mapping is applied, only
+`participant_id` is used throughout.
+
+```{r write-filtered}
+write_csv(filtered_data, "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/filtered_data_p7_10.csv")
+```
+
+## Step 4: First quartile, median, and third quartile rated face per participant
+
+For each participant, rank their 60 unique face judgements (the `face_<num>`
+columns, excluding `_repeat` columns) from lowest to highest rating, then take
+the 15th-, 30th-, and 45th-ranked face/rating as Q1, median, and Q3.
+
+```{r face-long}
+face_long <- filtered_data %>%
+  select(participant_id, matches("^face_\\d+$")) %>%
+  pivot_longer(
+    cols = matches("^face_\\d+$"),
+    names_to = "face_num",
+    values_to = "rating"
+  ) %>%
+  mutate(face_num = str_remove(face_num, "^face_"))
+```
+
+```{r quartile-faces}
+quartile_faces <- face_long %>%
+  group_by(participant_id) %>%
+  arrange(rating, .by_group = TRUE) %>%
+  mutate(rank = row_number()) %>%
+  filter(rank %in% c(15, 30, 45)) %>%
+  mutate(quartile = case_when(
+    rank == 15 ~ "Q1",
+    rank == 30 ~ "median",
+    rank == 45 ~ "Q3"
+  )) %>%
+  ungroup() %>%
+  select(participant_id, quartile, rank, face_num, rating)
+
+quartile_faces
+```
+
+## Step 5: Join the quartile faces with their Peterson face age data
+
+`PetersonFaceData.csv` lists each face stimulus once (plus a duplicate "(Repeat)"
+row for the 10 repeat faces, which carries no extra information) along with its
+`Mean Age`. Deduplicate on stimulus, then join the Q1/median/Q3 faces from Step 4
+onto their corresponding age.
+
+```{r read-peterson}
+peterson_data <- read_csv(
+  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/PetersonFaceData.csv",
+  show_col_types = FALSE
+) %>%
+  mutate(Stimulus = as.character(Stimulus)) %>%
+  distinct(Stimulus, `Mean Age`) %>%
+  rename(face_num = Stimulus, age = `Mean Age`)
+```
+
+```{r join-quartile-age}
+quartile_faces_with_age <- quartile_faces %>%
+  left_join(peterson_data, by = "face_num")
+
+quartile_faces_with_age
+```
+
+```{r write-quartile-age}
+write_csv(
+  quartile_faces_with_age,
+  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/quartile_faces_with_age.csv"
+)
+```
+
+## Step 6: Within-participant test-retest reliability
+
+For each participant, pair up their first and repeat rating on each of the 10
+repeated faces, then compute one Pearson correlation per participant across
+those 10 pairs.
+
+```{r repeat-pairs}
+repeat_face_nums <- c(1, 2, 4, 5, 6, 7, 9, 15, 24, 79)
+
+repeat_pairs <- filtered_data %>%
+  select(
+    participant_id,
+    all_of(paste0("face_", repeat_face_nums)),
+    all_of(paste0("face_", repeat_face_nums, "_repeat"))
+  ) %>%
+  pivot_longer(
+    cols = -participant_id,
+    names_to = c("face_num", "rep"),
+    names_pattern = "^face_(\\d+)(_repeat)?$",
+    values_to = "rating"
+  ) %>%
+  mutate(rep = if_else(rep == "_repeat", "rating2", "rating1")) %>%
+  pivot_wider(names_from = rep, values_from = rating)
+
+repeat_pairs
+```
+
+```{r reliability}
+reliability <- repeat_pairs %>%
+  group_by(participant_id) %>%
+  summarise(
+    n_pairs = n(),
+    pearson_r = cor(rating1, rating2, method = "pearson"),
+    .groups = "drop"
+  )
+
+reliability
+```
+
+```{r write-reliability}
+write_csv(
+  reliability,
+  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/within_participant_reliability.csv"
+)
+```
+
+## Step 7: Reverse-scored items
+
+The following items are reverse-worded and need to be reverse-scored before
+averaging:
+
+- Work Characteristics (`workHabits`): Q3, Q9, Q12
+- Societal Change Perceptions / creative perceptions (`creativePerceptions`): Q6, Q11
+
+KAI (`kaiSurvey`) has no reverse-scored items.
+
+## Step 8: Average score per survey
+
+Each survey uses a fixed-option button scale, so first recode the text labels
+to numbers: KAI is a 4-point scale (Very Hard=1 ... Very Easy=4), and both
+creative perceptions and work habits use a 5-point agree/disagree scale
+(Strongly Disagree=1 ... Strongly Agree=5). Reverse-scored items are flipped
+(`6 - x`, since min+max = 6 on the 5-point scale) before averaging.
+
+```{r recode-likert}
+kai_levels <- c("Very Hard" = 1, "Hard" = 2, "Easy" = 3, "Very Easy" = 4)
+agree_levels <- c("Strongly Disagree" = 1, "Disagree" = 2,
+                   "Neither Agree nor Disagree" = 3, "Agree" = 4,
+                   "Strongly Agree" = 5)
+
+recode_likert <- function(x, levels) unname(levels[x])
+
+scored_data <- filtered_data %>%
+  mutate(across(matches("^kaiSurvey_Q\\d+$"), ~ recode_likert(.x, kai_levels))) %>%
+  mutate(across(matches("^creativePerceptions_Q\\d+$"), ~ recode_likert(.x, agree_levels))) %>%
+  mutate(across(matches("^workHabits_Q\\d+$"), ~ recode_likert(.x, agree_levels)))
+```
+
+```{r reverse-score}
+reverse_cols <- c(
+  "creativePerceptions_Q6", "creativePerceptions_Q11",
+  "workHabits_Q3", "workHabits_Q9", "workHabits_Q12"
+)
+
+scored_data <- scored_data %>%
+  mutate(across(all_of(reverse_cols), ~ 6 - .x))
+```
+
+```{r average-scores}
+scored_data <- scored_data %>%
+  mutate(
+    kai_score_out_of_4 = rowMeans(pick(matches("^kaiSurvey_Q\\d+$")), na.rm = TRUE),
+    creative_perceptions_score_out_of_5 = rowMeans(pick(matches("^creativePerceptions_Q\\d+$")), na.rm = TRUE),
+    work_habits_score_out_of_5 = rowMeans(pick(matches("^workHabits_Q\\d+$")), na.rm = TRUE)
+  )
+
+scored_data %>%
+  select(participant_id, kai_score_out_of_4,
+         creative_perceptions_score_out_of_5, work_habits_score_out_of_5)
+```
+
+```{r write-scores}
+write_csv(
+  scored_data %>%
+    select(participant_id, kai_score_out_of_4,
+           creative_perceptions_score_out_of_5, work_habits_score_out_of_5),
+  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/survey_scores.csv"
+)
+```
+
+## Step 9: Correlate survey scores with quartile-face ages
+
+For each of the 3 survey scores and each of the 3 quartile faces (Q1, median,
+Q3) from Step 5, test whether the survey score correlates with the age of the
+face the participant rated at that quartile (e.g. is a higher creative
+perceptions score linked to a younger Q1 face?). That's 3 scores x 3 quartiles
+= 9 Pearson correlation tests.
+
+```{r quartile-ages-wide}
+quartile_ages_wide <- quartile_faces_with_age %>%
+  select(participant_id, quartile, age) %>%
+  pivot_wider(names_from = quartile, values_from = age, names_prefix = "age_")
+```
+
+```{r scores-and-ages}
+scores_and_ages <- scored_data %>%
+  select(participant_id, kai_score_out_of_4,
+         creative_perceptions_score_out_of_5, work_habits_score_out_of_5) %>%
+  left_join(quartile_ages_wide, by = "participant_id")
+
+scores_and_ages
+```
+
+```{r nine-correlations}
+score_cols <- c("kai_score_out_of_4", "creative_perceptions_score_out_of_5", "work_habits_score_out_of_5")
+age_cols <- c("age_Q1", "age_median", "age_Q3")
+
+combos <- expand.grid(score_col = score_cols, age_col = age_cols, stringsAsFactors = FALSE)
+
+correlation_results <- combos %>%
+  mutate(r = NA_real_, p_value = NA_real_, n = NA_integer_)
+
+for (i in seq_len(nrow(combos))) {
+  x <- scores_and_ages[[combos$score_col[i]]]
+  y <- scores_and_ages[[combos$age_col[i]]]
+  ct <- cor.test(x, y)
+  correlation_results$r[i] <- unname(ct$estimate)
+  correlation_results$p_value[i] <- ct$p.value
+  correlation_results$n[i] <- sum(complete.cases(x, y))
+}
+
+correlation_results
+```
+
+```{r write-correlations}
+write_csv(
+  correlation_results,
+  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/quartile_age_correlations.csv"
+)
+```
+
+### Visualize the 9 score-age relationships
+
+A 3x3 grid of scatterplots (one per survey score x quartile-face combination),
+each with a linear fit. With only 4 participants this is mainly useful for
+spotting whether a correlation is being driven by a single outlier; it should
+get more informative as more participants (up to ~200 planned) are added.
+
+```{r score-age-grid-data}
+score_labels <- c(
+  kai_score_out_of_4 = "KAI score (/4)",
+  creative_perceptions_score_out_of_5 = "Creative perceptions score (/5)",
+  work_habits_score_out_of_5 = "Work habits score (/5)"
+)
+age_labels <- c(
+  age_Q1 = "Q1 face age",
+  age_median = "Median face age",
+  age_Q3 = "Q3 face age"
+)
+
+score_age_long <- scores_and_ages %>%
+  pivot_longer(cols = all_of(score_cols), names_to = "score_name", values_to = "score_value") %>%
+  pivot_longer(cols = all_of(age_cols), names_to = "age_name", values_to = "age_value") %>%
+  mutate(
+    score_name = factor(score_labels[score_name], levels = score_labels),
+    age_name = factor(age_labels[age_name], levels = age_labels)
+  )
+```
+
+```{r score-age-grid-plot, fig.width=9, fig.height=8}
+score_age_plot <- ggplot(score_age_long, aes(x = score_value, y = age_value)) +
+  geom_point(size = 2) +
+  geom_smooth(method = "lm", se = FALSE, color = "steelblue") +
+  facet_grid(age_name ~ score_name, scales = "free_x") +
+  labs(x = "Survey score", y = "Face age") +
+  theme_bw()
+
+score_age_plot
+```
+
+```{r write-score-age-plot}
+ggsave(
+  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/score_age_grid.png",
+  score_age_plot, width = 9, height = 8, dpi = 150
+)
+```
+
+### Same data, one panel per survey score (quartile as color)
+
+An alternative to the 3x3 grid above: one panel per survey score, with the
+three quartiles overlaid as separate colors/trend lines instead of separate
+facets. This makes it easier to compare whether the score-age relationship
+looks similar or different across Q1/median/Q3 within a single panel.
+
+```{r score-age-combined-plot, fig.width=11, fig.height=4}
+score_age_combined_plot <- ggplot(score_age_long, aes(x = score_value, y = age_value, color = age_name)) +
+  geom_point(size = 2) +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~score_name, scales = "free_x") +
+  labs(x = "Survey score", y = "Face age", color = "Quartile") +
+  theme_bw()
+
+score_age_combined_plot
+```
+
+```{r write-score-age-combined-plot}
+ggsave(
+  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/score_age_combined.png",
+  score_age_combined_plot, width = 11, height = 4, dpi = 150
+)
+```

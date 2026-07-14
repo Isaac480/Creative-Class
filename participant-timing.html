@@ -1,0 +1,71 @@
+<title>Participant timing — does rt = duration?</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 760px; margin: 40px auto; padding: 0 20px; line-height: 1.55; color: #1a1a1a; }
+  @media (prefers-color-scheme: dark) { body { color: #e6e6e6; } }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .meta { color: #777; font-size: 0.85rem; margin-bottom: 28px; }
+  h2 { font-size: 1.05rem; margin-top: 32px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  @media (prefers-color-scheme: dark) { h2 { border-color: #444; } }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #eee; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #333; } }
+  th { color: #666; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { th { color: #999; } }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .flag { color: #b45309; }
+  @media (prefers-color-scheme: dark) { .flag { color: #f0b429; } }
+  .note { background: #f6f6f6; border-left: 3px solid #999; padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .note { background: #262626; border-color: #666; } }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88em; }
+  @media (prefers-color-scheme: dark) { code { background: #333; } }
+  .big { font-size: 1.3rem; font-weight: 600; }
+</style>
+
+<h1>Does <code>rt</code> tell you how long the experiment took?</h1>
+<div class="meta">data/temp/data.csv &middot; participants 7&ndash;10</div>
+
+<p><strong>Short answer: not directly, but you can get duration from the same rows.</strong>
+Each participant's <code>json_data</code> column is a JSON array of jsPsych trial records. Every trial has
+two relevant fields:</p>
+
+<ul>
+  <li><code>rt</code> &mdash; time spent on <em>that single trial</em> (reaction time)</li>
+  <li><code>time_elapsed</code> &mdash; running total of milliseconds since the experiment started, as of the end of that trial</li>
+</ul>
+
+<p>So the <strong><code>time_elapsed</code> value on the last trial</strong> is the total experiment duration &mdash;
+that's the number to use, not any single <code>rt</code>. (Summing all the <code>rt</code>s gives nearly the same
+number, since <code>time_elapsed</code> is essentially a running sum of the <code>rt</code>s plus small render/loading
+gaps &mdash; see table below.)</p>
+
+<h2 id="results">Total time per participant</h2>
+
+<table>
+  <tr><th>ID</th><th class="num">Total duration (last time_elapsed)</th><th class="num">Sum of all rt</th><th>Notes</th></tr>
+  <tr><td>7</td><td class="num">21.0 min</td><td class="num">20.7 min</td><td></td></tr>
+  <tr><td>8</td><td class="num">14.5 min</td><td class="num">14.2 min</td><td></td></tr>
+  <tr><td>9</td><td class="num">27.1 min</td><td class="num">26.7 min</td><td class="flag">includes a 13.0-min idle gap, see below</td></tr>
+  <tr><td>10</td><td class="num">18.3 min</td><td class="num">18.1 min</td><td></td></tr>
+</table>
+
+<p class="big">Average: 20.2 minutes</p>
+
+<div class="note">
+<strong>Participant 9 is an outlier.</strong> One trial (the second-to-last survey page) has
+<code>rt = 781,307 ms</code> &asymp; 13.0 minutes, far above every other trial for any of the four participants
+(next-largest is ~3.5 min). That's almost certainly the participant leaving the tab open/idle rather than
+actually reading that page for 13 minutes. If you drop that one gap, participant 9's real engaged time is
+&asymp; 14.1 min &mdash; in line with the others.
+<br><br>
+<strong>Average excluding that outlier gap: 17.0 minutes.</strong>
+</div>
+
+<h2 id="how">How to pull this yourself</h2>
+<p>The <code>json_data</code> cell is a Python-repr-style string (single-quoted), not strict JSON &mdash;
+use <code>ast.literal_eval()</code> rather than <code>json.loads()</code> to parse it. Then:</p>
+<pre style="background:#f0f0f0; padding:10px 14px; border-radius:6px; overflow-x:auto; font-size:0.85rem;">import ast
+trials = ast.literal_eval(row['json_data'])
+duration_ms = trials[-1]['time_elapsed']   # total time for that participant</pre>
+
+<p><em>Source: data/temp/data.csv</em></p>

@@ -123,6 +123,75 @@ def export_participant_survey_data(data_id, output_dir="exported_data"):
 
         return True
 
+def export_clean_data(output_dir="exported_data"):
+    """Export a clean, minimal-column view of all participants' data:
+    one CSV of face judgement trials (one row per trial) and one CSV of
+    survey responses (one row per participant, all surveys flattened into columns).
+    """
+    with Session(engine) as session:
+        all_data = session.exec(select(Data)).all()
+
+        if not all_data:
+            print("No data found in database")
+            return
+
+        os.makedirs(output_dir, exist_ok=True)
+
+        trial_rows = []
+        survey_rows = []
+
+        for data_row in all_data:
+            anon_id = None
+            survey_row = {"participant_id": data_row.id, "worker_id": data_row.worker_id, "condition": data_row.condition}
+
+            for trial_data in data_row.json_data:
+                anon_id = trial_data.get("anon_id", anon_id)
+
+                if trial_data.get("trial_type") == "image-slider-response":
+                    trial_rows.append({
+                        "participant_id": data_row.id,
+                        "anon_id": trial_data.get("anon_id"),
+                        "condition": data_row.condition,
+                        "trial_index": trial_data.get("trial_index"),
+                        "stimulus": trial_data.get("stimulus"),
+                        "rating": trial_data.get("response"),
+                        "rt": trial_data.get("rt"),
+                    })
+                elif (trial_data.get("trial_type") == "render-mustache-template"
+                      and trial_data.get("experiment_phase") == "survey"
+                      and trial_data.get("form_data")):
+                    form_data = trial_data["form_data"]
+                    if isinstance(form_data, str):
+                        form_data = json.loads(form_data)
+                    survey_name = (trial_data.get("form_name") or "survey").removesuffix("Form")
+                    for key, value in form_data.items():
+                        survey_row[f"{survey_name}_{key}"] = (
+                            json.dumps(value) if isinstance(value, (dict, list)) else value
+                        )
+
+            survey_row["anon_id"] = anon_id
+            survey_rows.append(survey_row)
+
+        if trial_rows:
+            trial_keys = ["participant_id", "anon_id", "condition", "trial_index", "stimulus", "rating", "rt"]
+            trials_csv = os.path.join(output_dir, "face_judgement_trials.csv")
+            with open(trials_csv, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=trial_keys)
+                writer.writeheader()
+                writer.writerows(trial_rows)
+            print(f"Face judgement trial data saved to '{trials_csv}'")
+
+        if survey_rows:
+            survey_keys = sorted({k for row in survey_rows for k in row.keys()} - {"participant_id", "worker_id", "condition", "anon_id"})
+            survey_keys = ["participant_id", "worker_id", "anon_id", "condition"] + survey_keys
+            survey_csv = os.path.join(output_dir, "survey_data.csv")
+            with open(survey_csv, "w", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=survey_keys)
+                writer.writeheader()
+                writer.writerows(survey_rows)
+            print(f"Survey data saved to '{survey_csv}'")
+
+
 def export_all_participants():
     """Export data for all participants in the database."""
     with Session(engine) as session:
@@ -275,4 +344,4 @@ def export_all_participants_survey_data():
 
 if __name__ == "__main__":
     # Export all participants when script is run
-    export_all_participants()
+    export_clean_data()
