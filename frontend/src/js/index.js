@@ -7,7 +7,6 @@ import circular_slider_image_morpher from "./circular-slider-image-morpher";
 import keypress_duration_trial from "./keypress-duration-trial";
 import face_description_trial from "./face-description-trial";
 import {
-  generateCompletionCode,
   generateInstructionsWithMustache,
   getCondition,
   getExperimentInfo,
@@ -56,7 +55,8 @@ import "../css/index.css";
   const image_dir = "src/images/jpg/Modified Faces";
   const example_image = "src/images/examples/example_faces.jpg";
   const extension = ".jpg";
-  const completion_code = generateCompletionCode("exa", "mple");
+  const completion_code = "AE6A7CF74D";
+  const redirect_url = "https://connect.cloudresearch.com/participant/project/AE6A7CF74D/complete";
   const reading_speed = 250;
   const reading_speed_button_delay_type = "none"; // enable | show | none
   const show_slider_delay = 500;
@@ -243,6 +243,7 @@ import "../css/index.css";
     compensation, // str: in dollars
     estimated_task_duration, // str: in min
     completion_code,
+    redirect_url,
     generateTrials,
   });
 })();
