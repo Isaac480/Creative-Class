@@ -55,8 +55,18 @@ import "../css/index.css";
   const image_dir = "src/images/jpg/Modified Faces";
   const example_image = "src/images/examples/example_faces.jpg";
   const extension = ".jpg";
-  const completion_code = "AE6A7CF74D";
-  const redirect_url = "https://connect.cloudresearch.com/participant/project/AE6A7CF74D/complete";
+  const completion_code =
+    condition === "emotional"
+      ? "34CAABE769"
+      : condition === "smart"
+      ? "FF1C8409BC"
+      : "AE6A7CF74D";
+  const redirect_url =
+    condition === "emotional"
+      ? "https://connect.cloudresearch.com/participant/project/34CAABE769/complete"
+      : condition === "smart"
+      ? "https://connect.cloudresearch.com/participant/project/FF1C8409BC/complete"
+      : "https://connect.cloudresearch.com/participant/project/AE6A7CF74D/complete";
   const reading_speed = 250;
   const reading_speed_button_delay_type = "none"; // enable | show | none
   const show_slider_delay = 500;
