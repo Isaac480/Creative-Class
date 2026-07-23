@@ -182,11 +182,14 @@ export default async function runExperiment({
     },
     tags,
     check_fn() {
-      const valid = window.validateCaptchaForm();
-      if (valid) {
-        this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
-      }
-      return valid;
+      // Don't block continuing on a wrong answer — record pass/fail instead so
+      // bots/inattentive participants can be filtered post-hoc rather than
+      // getting stuck (and rather than us never seeing their attempt at all).
+      const correct = window.validateCaptchaForm();
+      this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
+      this.data.captcha_correct = correct;
+      this.data.captcha_target_word = window._captchaWord;
+      return true;
     },
   };
 
@@ -205,7 +208,12 @@ export default async function runExperiment({
     },
     tags,
     check_fn() {
-      return $(this.data.form_id).valid();
+      // Same as the captcha above — record whether the retyped sentence matched
+      // instead of blocking on it, so it can be used as a post-hoc attention filter.
+      const correct = $(this.data.form_id).valid();
+      this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
+      this.data.attrition_correct = correct;
+      return true;
     },
     on_finish(data) {
       updateParticipantStatus({
