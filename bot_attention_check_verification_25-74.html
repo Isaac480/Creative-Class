@@ -1,0 +1,101 @@
+<meta charset="UTF-8">
+<title>Bot/attention check verification — participants 25–74</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 860px; margin: 40px auto; padding: 0 20px; line-height: 1.55; color: #1a1a1a; }
+  @media (prefers-color-scheme: dark) { body { color: #e6e6e6; } }
+  h1 { font-size: 1.35rem; margin-bottom: 4px; }
+  .meta { color: #777; font-size: 0.85rem; margin-bottom: 22px; }
+  h2 { font-size: 1.05rem; margin-top: 30px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  @media (prefers-color-scheme: dark) { h2 { border-color: #444; } }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #eee; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #333; } }
+  th { color: #666; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { th { color: #999; } }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88em; }
+  @media (prefers-color-scheme: dark) { code { background: #333; } }
+  .note { background: #f6f6f6; border-left: 3px solid #999; padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .note { background: #262626; border-color: #666; } }
+  .caveat { border-left-color: #b45309; }
+  @media (prefers-color-scheme: dark) { .caveat { border-left-color: #f0b429; } }
+  .headline { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  @media (prefers-color-scheme: dark) { .headline { background: #052e21; border-color: #14532d; } }
+  .headline h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  .pill { font-size: 0.72rem; font-weight: 600; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+  .pill-yes { background: #bbf7d0; color: #14532d; }
+  @media (prefers-color-scheme: dark) { .pill-yes { background: #14532d; color: #bbf7d0; } }
+  .pill-partial { background: #fde68a; color: #713f12; }
+  @media (prefers-color-scheme: dark) { .pill-partial { background: #713f12; color: #fde68a; } }
+</style>
+
+<h1>Bot/attention check verification — participants 25–74</h1>
+<div class="meta">Checked directly against data/temp/data.csv (raw trial data), not just the exclusions CSV</div>
+
+<div class="headline">
+<h3>Short answer: yes, all 50 pass — but the "0 failures" comes from how the check works, not from a stored score</h3>
+<p>All 50 participants (25–74) have a completed <strong>captcha (bot check)</strong> trial and a completed
+<strong>attrition (attention check)</strong> trial. Because both are built to block submission until answered
+correctly, the mere existence of a stored trial for a participant is proof they passed it. I verified this
+directly against the raw data rather than trusting the exclusions file's column.</p>
+</div>
+
+<h2 id="how">How each check actually works <span class="pill pill-yes">verified in code</span></h2>
+<table>
+<tr><th>Check</th><th>What it asks</th><th>Where enforced</th><th>What happens on a wrong answer</th></tr>
+<tr><td><strong>Bot check</strong><br><code>captcha.html</code></td><td>Type one of three words, the one shown highlighted</td><td><code>window.validateCaptchaForm()</code>, <code>captcha.html</code></td><td>Form won't submit</td></tr>
+<tr><td><strong>Attention check</strong><br><code>attrition.html</code></td><td>Retype the exact sentence "I will answer open-ended questions."</td><td>jQuery-validate rule <code>attritionAnswer</code> in <code>frontend/src/js/utils.js</code> (regex match)</td><td>Form won't submit</td></tr>
+</table>
+<p>Both trials run through the same plugin (<code>render-mustache-template.js</code>), which calls a
+<code>check_fn()</code> before finishing the trial — if it returns false, the function just <code>return</code>s
+without ever calling <code>jsPsych.finishTrial()</code>. No trial is recorded, the page stays up, and the
+participant must try again. <strong>A failed attempt is never written to storage at all</strong> — there's no
+attempt counter, no "wrong answer" log, nothing. So this isn't a case where we're trusting an unverified
+self-report; it's a hard client-side gate.</p>
+
+<h2 id="captcha">Bot check: verified per-participant</h2>
+<p>I pulled the actual stored answer for all 50 participants directly from <code>json_data</code>. Every one
+has a non-empty <code>captchaAnswer</code>, and the words vary from person to person (the highlighted word is
+randomized each session) — consistent with real people typing whatever word they were actually shown, not a
+fixed/scripted value:</p>
+<table>
+<tr><th>ID</th><th>captchaAnswer</th><th>ID</th><th>captchaAnswer</th><th>ID</th><th>captchaAnswer</th></tr>
+<tr><td>25</td><td>River</td><td>26</td><td>PUZZLE</td><td>27</td><td>PUZZLE</td></tr>
+<tr><td>28</td><td>River</td><td>29</td><td>Bridge</td><td>30</td><td>winter</td></tr>
+<tr><td>31</td><td>winter</td><td>32</td><td>Bright</td><td>33</td><td>PUZZLE</td></tr>
+<tr><td>...</td><td>(47 more, all non-empty, all plausible words)</td><td>73</td><td>CLOUD</td><td>74</td><td>Bright</td></tr>
+</table>
+<p><strong>0 of 50 missing or blank.</strong> Every participant in this range has a captcha trial recorded with a
+real answer in it — the bot check gate was in place and passed for all of them.</p>
+
+<h2 id="attrition">Attention check: trial completed, but content unrecoverable</h2>
+<p>All 50 also have a completed attrition trial — same logic, they couldn't have moved past this page without
+typing the sentence correctly. <strong>One gap:</strong> unlike the captcha trial, the attrition trial's stored
+data doesn't include a <code>form_data</code> field at all — only timing/metadata (<code>rt</code>,
+<code>form_name</code>, <code>time_elapsed</code>, etc.). So I can confirm the gate was passed (trial exists),
+but I can't independently inspect what was actually typed the way I could for the captcha word — that detail
+was never exported in the first place, for anyone, in any batch.</p>
+
+<h2 id="exclusions-col">Why <code>exclusions_25-74.csv</code> shows FALSE for everyone</h2>
+<p>The <code>bot_or_attention_check_fail</code> column is hardcoded in the Rmd:</p>
+<pre style="background:#f0f0f0;padding:10px 14px;border-radius:6px;font-size:0.85rem;overflow-x:auto;">bot_or_attention_check_fail = FALSE,  # not computable — see note above</pre>
+<p>with a comment explaining exactly the mechanism above. That's not a bug or an oversight glossing over
+something — it's an accurate reflection of the fact that this criterion is structurally satisfied by
+construction for anyone who has a stored row at all, so there's no per-participant value left to compute. My
+direct check above (all 50 have both trials, all 50 have valid captcha answers) confirms that reasoning holds
+for this specific batch too, rather than just assuming it carried over from the pilot.</p>
+
+<div class="note caveat">
+<strong>Aside, unrelated to the bot check:</strong> 3 IDs in this range (38, 47, 54) have a stale row in
+<code>data/temp/participant.csv</code> showing <code>status: timeout</code> and a garbled condition value with a
+<em>different</em> worker_id than the completed session actually stored in <code>data/temp/data.csv</code> —
+looks like ID reuse between an abandoned session and a later completed one sharing the same numeric participant
+ID. Doesn't affect anything above (the captcha/attrition check was verified against the real completed session
+in <code>data.csv</code>, which is also what feeds the exclusions/model pipeline) — just worth knowing if
+<code>participant.csv</code> is ever used directly for something else.
+</div>
+
+<p><em>Verified against: data/temp/data.csv (json_data column, all 50 participants 25–74) &middot;
+frontend/src/html/captcha.html, attrition.html &middot; frontend/src/js/utils.js, experiment.js,
+render-mustache-template.js &middot; face_survey_analysis.Rmd (exclusions section, line 317)</em></p>

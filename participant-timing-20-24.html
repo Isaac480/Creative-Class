@@ -1,5 +1,5 @@
 <meta charset="UTF-8">
-<title>Participant timing — participants 7–10</title>
+<title>Participant timing — participants 20–24</title>
 <style>
   :root { color-scheme: light dark; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 820px; margin: 40px auto; padding: 0 20px; line-height: 1.55; color: #1a1a1a; }
@@ -14,8 +14,6 @@
   th { color: #666; font-weight: 600; }
   @media (prefers-color-scheme: dark) { th { color: #999; } }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
-  .flag { color: #b45309; }
-  @media (prefers-color-scheme: dark) { .flag { color: #f0b429; } }
   .note { background: #f6f6f6; border-left: 3px solid #999; padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
   @media (prefers-color-scheme: dark) { .note { background: #262626; border-color: #666; } }
   code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88em; }
@@ -27,11 +25,11 @@
   /* ---- timing chart ---- */
   .viz-root {
     --surface-1: #fcfcfb; --text-primary:#0b0b0b; --text-secondary:#52514e; --muted:#898781;
-    --s-consent:#2a78d6; --s-attrition:#1baf7a; --s-main:#eda100; --s-survey:#4a3aa7; --s-debrief:#e34948;
+    --s-consent:#2a78d6; --s-attrition:#1baf7a; --s-main:#eda100; --s-captcha:#008300; --s-survey:#4a3aa7; --s-debrief:#e34948;
   }
   @media (prefers-color-scheme: dark) {
     .viz-root { --surface-1:#1a1a19; --text-primary:#ffffff; --text-secondary:#c3c2b7; --muted:#898781;
-      --s-consent:#3987e5; --s-attrition:#199e70; --s-main:#c98500; --s-survey:#9085e9; --s-debrief:#e66767; }
+      --s-consent:#3987e5; --s-attrition:#199e70; --s-main:#c98500; --s-captcha:#008300; --s-survey:#9085e9; --s-debrief:#e66767; }
   }
   .chart-row { display:flex; align-items:center; gap:10px; margin:10px 0; }
   .chart-label { width:34px; font-size:0.85rem; color:var(--text-secondary); flex-shrink:0; }
@@ -52,44 +50,48 @@
 </style>
 
 <h1>How long did each participant take?</h1>
-<div class="meta">data/temp/data.csv &middot; participants 7&ndash;10 &middot; revised with idle-time detail (see <a href="participant-timing-20-24.html">participants 20&ndash;24</a> for the same treatment on a later batch)</div>
+<div class="meta">data/temp/data.csv &middot; participants 20&ndash;24 (the 5 rows with a <code>worker_id</code>)</div>
 
-<p><strong>Total time is the <code>time_elapsed</code> value on each participant's last trial</strong> — same
-approach as before. This revision adds the idle-time check and a per-phase breakdown.</p>
+<p><strong>Total time comes from the same place as last time: the <code>time_elapsed</code> value on each
+participant's last trial.</strong> Idle time is a separate question — see below, but the short version is
+these 5 ran clean: no meaningful idle time, just some genuinely long survey pages.</p>
 
 <h2 id="totals">Total time per participant</h2>
 
 <table>
   <tr><th>ID</th><th class="num">Total time</th><th class="num">Tab-away (blur) time</th><th>Notes</th></tr>
-  <tr><td>7</td><td class="num">21.0 min</td><td class="num">0 s</td><td>—</td></tr>
-  <tr><td>8</td><td class="num">14.5 min</td><td class="num">0 s</td><td>fastest of the 4</td></tr>
-  <tr><td>9</td><td class="num">27.1 min</td><td class="num">1.0 s</td><td class="flag">includes a 13.0-min outlier gap, see below</td></tr>
-  <tr><td>10</td><td class="num">18.3 min</td><td class="num">0 s</td><td>—</td></tr>
+  <tr><td>20</td><td class="num">16.5 min</td><td class="num">2.7 s</td><td>—</td></tr>
+  <tr><td>21</td><td class="num">13.8 min</td><td class="num">0 s</td><td>fastest of the 5</td></tr>
+  <tr><td>22</td><td class="num">24.2 min</td><td class="num">0 s</td><td>—</td></tr>
+  <tr><td>23</td><td class="num">26.6 min</td><td class="num">1.6 s</td><td>slowest — see survey breakdown below</td></tr>
+  <tr><td>24</td><td class="num">23.1 min</td><td class="num">0 s</td><td>—</td></tr>
 </table>
-<p class="big">Average: 20.2 minutes &middot; 17.0 minutes excluding participant 9's outlier gap</p>
+<p class="big">Average: 20.8 minutes</p>
 
 <h2 id="idle">Was any of that idle time?</h2>
 
-<p>Checking <code>browser_events</code> (blur/focus, logged by jsPsych's fullscreen plugin) first: essentially
-nothing. Across all 4 participants, total tab-away time tops out at 1.0 second. By that signal alone, nobody
-looks idle.</p>
+<p>jsPsych's fullscreen plugin already logs <code>browser_events</code> — <code>blur</code>/<code>focus</code>
+pairs that fire when the participant tabs away and back. Summing those gaps is the most direct "were they
+actually gone" signal in the data, and for all 5 participants it's <strong>negligible (0&ndash;2.7 seconds
+total)</strong> — nobody left the tab for any real stretch of time.</p>
 
 <div class="note">
-<strong>But participant 9 has a real idle gap that blur/focus misses.</strong> One trial &mdash; the
-demographics form (<code>surveyForm</code>) &mdash; has <code>rt = 781,307 ms</code> &asymp; 13.0 minutes. The
-next-slowest trial for that same participant is 208s (~3.5 min), so this one is <strong>3.75&times; the
-runner-up</strong>, not a gradual tail. There's no blur event around it, which means the participant most
-likely left the browser tab <em>in focus</em> and stepped away &mdash; switching windows/apps triggers
-<code>blur</code>, but locking the screen or just physically leaving doesn't always. That's why the rt-outlier
-check matters alongside blur/focus: blur/focus catches "tabbed away," an outlier rt catches "walked away but
-left the tab open."
+<strong>The big gaps are somewhere else: inside the survey block, and they're legitimate.</strong>
+Looking at per-trial <code>rt</code>, the slowest trials for every participant are open-ended survey forms —
+not idle time on a captcha or a slider. For participant 23 (the slowest overall):
 <br><br>
-Dropping that one gap puts participant 9's engaged time at &asymp; 14.1 min, in line with the other three.
+<code>workHabitsForm</code> 6.1 min &middot; <code>kaiSurveyForm</code> 4.0 min &middot;
+<code>demographicsForm</code> 3.6 min &middot; <code>creativePerceptionsForm</code> 2.0 min &middot;
+<code>big5PersonalityForm</code> 1.1 min
+<br><br>
+Those are forms with free-text and long item lists (you updated the work-habits question recently — that's
+likely why it's the single longest page across all 5 people). That's read-and-answer time, not the
+participant walking away — there's no accompanying blur event.
 </div>
 
 <h2 id="breakdown">Where the time went, per participant</h2>
-<p>Bar length is proportional to total time, so participant 9's bar is the longest &mdash; and you can see
-that length is almost entirely the survey segment. Hover a segment for its exact duration.</p>
+<p>Same totals as the table above, broken into experiment phases. Bar length is proportional to total time,
+so participant 23's bar is visibly the longest. Hover a segment for its exact duration.</p>
 
 <div class="viz-root">
 <div id="chart"></div>
@@ -97,6 +99,7 @@ that length is almost entirely the survey segment. Hover a segment for its exact
   <span class="legend-item"><span class="swatch" style="background:var(--s-consent)"></span>consent</span>
   <span class="legend-item"><span class="swatch" style="background:var(--s-attrition)"></span>attrition check</span>
   <span class="legend-item"><span class="swatch" style="background:var(--s-main)"></span>main task</span>
+  <span class="legend-item"><span class="swatch" style="background:var(--s-captcha)"></span>captcha</span>
   <span class="legend-item"><span class="swatch" style="background:var(--s-survey)"></span>survey</span>
   <span class="legend-item"><span class="swatch" style="background:var(--s-debrief)"></span>debriefing</span>
 </div>
@@ -106,13 +109,14 @@ that length is almost entirely the survey segment. Hover a segment for its exact
 (function(){
   var phases = [
     ["consent","--s-consent"], ["attrition","--s-attrition"], ["main","--s-main"],
-    ["survey","--s-survey"], ["debriefing","--s-debrief"]
+    ["captcha","--s-captcha"], ["survey","--s-survey"], ["debriefing","--s-debrief"]
   ];
   var data = {
-    7:  {consent:79.3, attrition:50.9, main:306.8, survey:763.6,  debriefing:61.3, total:1261.9},
-    8:  {consent:20.5, attrition:26.8, main:377.1, survey:440.9,  debriefing:5.4,  total:870.7},
-    9:  {consent:35.8, attrition:84.6, main:335.5, survey:1160.7, debriefing:8.9,  total:1625.5},
-    10: {consent:12.8, attrition:34.5, main:452.6, survey:578.3,  debriefing:18.6, total:1096.8}
+    20: {consent:15.8, attrition:40.2, main:317.7, captcha:7.8, survey:571.2, debriefing:34.5, total:987.2},
+    21: {consent:8.6,  attrition:19.9, main:288.5, captcha:6.9, survey:497.1, debriefing:7.4,  total:828.4},
+    22: {consent:25.2, attrition:199.4,main:492.3, captcha:16.2,survey:708.8, debriefing:7.1,  total:1448.9},
+    23: {consent:45.1, attrition:49.0, main:429.9, captcha:9.3, survey:1050.5,debriefing:14.2, total:1598.0},
+    24: {consent:11.8, attrition:106.3,main:431.6, captcha:33.7,survey:800.3, debriefing:2.9,  total:1386.7}
   };
   var maxTotal = Math.max.apply(null, Object.values(data).map(function(d){return d.total;}));
   var chart = document.getElementById('chart');
@@ -154,8 +158,8 @@ that length is almost entirely the survey segment. Hover a segment for its exact
 
 <h2 id="how">How to calculate this for future participants</h2>
 
-<p>Same reusable function as the participants 20&ndash;24 report, with one addition: an rt-outlier flag per
-participant, since participant 9 showed that blur/focus alone doesn't catch every idle gap.</p>
+<p>Reusable version of the same parsing approach as last time, extended to also report idle (tab-away) time
+and a phase breakdown. Drop this into a script and point it at any exported <code>data.csv</code>:</p>
 
 <pre>import ast
 import csv
@@ -190,29 +194,25 @@ def analyze_participant(row):
             phase_ms[phase] = phase_ms.get(phase, 0) + (t_elapsed - prev_t)
         prev_t, last_phase = t_elapsed, phase
 
-    # rt-outlier flag: catches "walked away but left the tab in focus," which
-    # blur/focus misses. Flags a trial if it's >3x the next-slowest rt AND
-    # over 5 minutes absolute -- tune the thresholds as you see more data.
-    rts = sorted((t["rt"] for t in trials if t.get("rt") is not None), reverse=True)
-    outlier = None
-    if len(rts) >= 2 and rts[0] > 300_000 and rts[0] > 3 * rts[1]:
-        outlier = rts[0]
-
     return {
         "id": row["id"],
         "total_min": round(total_ms / 60000, 2),
         "idle_sec": round(idle_ms / 1000, 1),
         "phase_breakdown_sec": {k: round(v / 1000, 1) for k, v in phase_ms.items()},
-        "rt_outlier_ms": outlier,
     }
 
 with open("data/temp/data.csv") as f:
     for row in csv.DictReader(f):
         print(analyze_participant(row))</pre>
 
-<p>Same two caveats as before: parse with <code>ast.literal_eval</code>, not <code>json.loads</code>
-(<code>json_data</code> is a Python-repr string) — and the outlier thresholds above (3&times;, 5 min) are a
-starting heuristic based on seeing one clear case, not a validated rule; revisit them once you've seen more
-participants.</p>
+<p>Two things to know before reusing it:</p>
+<ul>
+  <li><code>json_data</code> is a <strong>Python-repr string</strong> (single quotes, <code>True</code>/<code>None</code>),
+  not strict JSON — <code>ast.literal_eval</code>, not <code>json.loads</code>.</li>
+  <li>Idle detection is only as good as <code>browser_events</code> — it currently catches tab switches
+  (blur/focus) and fullscreen exits, which is what caught participant 9's 13-minute gap in the last batch.
+  It won't catch someone who stays on the tab but walks away without switching windows; if that turns out to
+  matter, the fix is adding a visibility-based heartbeat ping on the frontend, not a change to this analysis.</li>
+</ul>
 
-<p><em>Source: data/temp/data.csv</em></p>
+<p><em>Source: data/temp/data.csv &middot; see also participant-timing.html (participants 7&ndash;10, prior batch)</em></p>

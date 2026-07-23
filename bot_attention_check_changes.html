@@ -1,0 +1,145 @@
+<meta charset="UTF-8">
+<title>Bot/attention check changes — non-blocking + recorded</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 860px; margin: 40px auto; padding: 0 20px; line-height: 1.55; color: #1a1a1a; }
+  @media (prefers-color-scheme: dark) { body { color: #e6e6e6; } }
+  h1 { font-size: 1.35rem; margin-bottom: 4px; }
+  .meta { color: #777; font-size: 0.85rem; margin-bottom: 22px; }
+  h2 { font-size: 1.05rem; margin-top: 30px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  @media (prefers-color-scheme: dark) { h2 { border-color: #444; } }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #333; } }
+  th { color: #666; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { th { color: #999; } }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88em; }
+  @media (prefers-color-scheme: dark) { code { background: #333; } }
+  pre { background:#f0f0f0; padding:10px 14px; border-radius:6px; overflow-x:auto; font-size:0.83rem; }
+  @media (prefers-color-scheme: dark) { pre { background: #262626; } }
+  .note { background: #f6f6f6; border-left: 3px solid #999; padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .note { background: #262626; border-color: #666; } }
+  .action { border-left-color: #b45309; }
+  @media (prefers-color-scheme: dark) { .action { border-left-color: #f0b429; } }
+  .pill { font-size: 0.72rem; font-weight: 600; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+  .pill-done { background: #bbf7d0; color: #14532d; }
+  @media (prefers-color-scheme: dark) { .pill-done { background: #14532d; color: #bbf7d0; } }
+  .pill-open { background: #fde68a; color: #713f12; }
+  @media (prefers-color-scheme: dark) { .pill-open { background: #713f12; color: #fde68a; } }
+  .diffbox del { background: #fecaca; text-decoration: none; display: block; }
+  .diffbox ins { background: #bbf7d0; text-decoration: none; display: block; }
+  @media (prefers-color-scheme: dark) { .diffbox del { background: #4c1d1d; } .diffbox ins { background: #14532d; } }
+</style>
+
+<h1>Bot/attention check changes</h1>
+<div class="meta">frontend/src/js/experiment.js &middot; makes both checks non-blocking, records pass/fail</div>
+
+<h2 id="captcha">Bot check (captcha) <span class="pill pill-done">changed</span></h2>
+<p>Before: on a wrong answer, <code>check_fn</code> returned <code>false</code>, which made the plugin refuse
+to finish the trial — stuck on the page, and the wrong attempt was never saved anywhere (only a correct answer
+ever got recorded, and only the answer itself, no pass/fail flag).</p>
+
+<pre class="diffbox"><del>const valid = window.validateCaptchaForm();
+if (valid) {
+  this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
+}
+return valid;</del><ins>const correct = window.validateCaptchaForm();
+this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
+this.data.captcha_correct = correct;
+this.data.captcha_target_word = window._captchaWord;
+return true;</ins></pre>
+
+<p>Now: the trial always finishes. Three things get saved regardless of correctness — the typed answer (already
+existed, now saved even when wrong), a <code>captcha_correct</code> boolean, and <code>captcha_target_word</code>
+(the actual highlighted word for that session, so correctness is independently checkable later rather than
+trusting a stored boolean).</p>
+
+<h2 id="attrition">Attention check (attrition) <span class="pill pill-done">changed</span></h2>
+<p>Before: <code>check_fn</code> returned jQuery-validate's <code>.valid()</code> result directly — same
+blocking behavior, and <strong>the typed sentence was never captured at all</strong>, correct or not (this
+trial had no <code>form_data</code> in the export, which is why the earlier verification report could confirm
+the check was passed but not read back what was actually typed).</p>
+
+<pre class="diffbox"><del>return $(this.data.form_id).valid();</del><ins>const correct = $(this.data.form_id).valid();
+this.data.form_data = JSON.stringify(getFormData(this.data.form_id));
+this.data.attrition_correct = correct;
+return true;</ins></pre>
+
+<p>Now: always finishes, and both the actual typed text and an <code>attrition_correct</code> boolean are
+saved — this also fixes the pre-existing gap where the typed sentence wasn't being captured at all.</p>
+
+<div class="note action">
+<strong>Needs a rebuild to go live.</strong> <code>experiment.js</code> is bundled by webpack
+(<code>frontend/package.json</code> → <code>npm run build</code>); editing the source doesn't change what's
+served until that runs and gets deployed. Also: participants collected before this change (everyone through
+participant 74) simply won't have <code>captcha_correct</code>/<code>attrition_correct</code> in their data —
+those fields didn't exist yet — so any future exclusions-pipeline logic using them needs to handle their
+absence for historical rows rather than assuming <code>FALSE</code> means "checked and passed."
+</div>
+
+<h2 id="survey-check">The in-survey attention check(s)</h2>
+<p>I searched all the survey HTML files and found exactly <strong>one</strong> embedded item like what you're
+describing — not two. It's in <code>kai-survey.html</code>, inserted after question 16:</p>
+<blockquote style="margin:10px 0; padding:8px 14px; border-left:3px solid #999; font-style:italic;">
+"17. For this item only, please select 'Easy.'"
+</blockquote>
+<table>
+<tr><th>Already non-blocking?</th><td><strong>Yes</strong> — <code>validateKaiForm()</code> (line 242 of
+<code>kai-survey.html</code>) only checks that <em>some</em> option was picked, not that it was specifically
+"Easy." No code change needed here for that part.</td></tr>
+<tr><th>Already recorded?</th><td><strong>Yes</strong> — whatever they actually picked is saved as
+<code>kai_attention</code> inside the KAI form's <code>form_data</code> (visible as the
+<code>kaiSurvey_kai_attention</code> column in the merged exports), because the whole form gets serialized on
+submit regardless of what's in it.</td></tr>
+<tr><th>Used in exclusions yet?</th><td><strong>No</strong> — <code>face_survey_analysis.Rmd</code>'s
+exclusion criterion #2 doesn't reference it at all right now.</td></tr>
+</table>
+<p>So this one already behaves exactly like you want the bot/attention checks to behave — nothing to change in
+the frontend, just a possible future step to actually incorporate <code>kai_attention != "Easy"</code> into the
+exclusion computation (currently hardcoded to <code>FALSE</code>, per the earlier verification report).</p>
+
+<h2 id="kai-verify">Did all 25–74 participants pass the KAI check? <span class="pill pill-done">verified</span></h2>
+<p>Pulled <code>kai_attention</code> directly from <code>data/temp/data.csv</code> for all 50 participants.
+<strong>48 of 50 selected "Easy" exactly as instructed. Two did not:</strong></p>
+<table>
+<tr><th>ID</th><th>Selected</th><th>Other flags on this participant</th></tr>
+<tr><td>29</td><td>"Very Easy" (adjacent option, not the instructed one)</td><td>None — reliability r = 0.91, not excluded on any current criterion</td></tr>
+<tr><td>54</td><td>"Very Easy" (adjacent option, not the instructed one)</td><td>Already excluded — reliability r = -0.08 (≤ 0)</td></tr>
+</table>
+<p>Both picked the option next to the correct one, not a random/far-off choice — reads more like skimming
+past "Easy" to "Very Easy" than pure random clicking. Participant 54 was already going to be excluded on
+reliability grounds regardless. <strong>Participant 29 is the interesting case</strong>: excellent test-retest
+reliability (0.91) but misses this literal instructed-response check — exactly the kind of case where this
+check would add information the reliability metric alone doesn't catch, if it were wired into the exclusion
+pipeline.</p>
+
+<h2 id="ai-assessment">Does any of this actually stop AI, or is it easy to get past?</h2>
+<div class="note action">
+<strong>Honest answer: this stops careless/rushed humans and naive scripted bots. It would not meaningfully
+stop a deliberate AI-driven respondent.</strong> All three checks share the same weakness — the "secret" is
+always sitting in plain, unobfuscated text in the page itself:
+<ul style="margin:8px 0 0;">
+<li><strong>Captcha word</strong>: set via <code>document.getElementById("captcha-word").textContent</code>
+(<code>captcha.html</code>) — anyone or anything reading the DOM (a real CAPTCHA solver, a scraping script, or
+an LLM given the page's text/HTML) gets the answer directly. There's no distortion, no image, no audio, none of
+the actual anti-bot mechanics a real CAPTCHA (reCAPTCHA/hCaptcha) uses.</li>
+<li><strong>Attrition sentence</strong>: the exact required sentence is printed right there on the page to be
+copied. Passing it proves the text was reproduced correctly, not that a human (vs. an automated agent) did it.</li>
+<li><strong>KAI "select Easy"</strong>: this is a reading-comprehension instruction embedded in plain text —
+exactly the kind of task an LLM is very good at, not something that trips it up.</li>
+</ul>
+This class of check is a standard, well-established technique in survey methodology for catching <em>inattentive
+or careless human respondents</em> (someone speed-clicking through without reading), and it does filter out the
+most naive bots (fixed-response spam scripts that never look at page content at all). But an actual AI agent
+capable of reading a rendered page and typing a response would sail through all three without effort — none of
+them test anything an AI is bad at. If deliberately AI-driven fraudulent responses (rather than careless humans)
+are the specific threat you're worried about, the fix isn't a better instructed-response item — it's a
+different category of tool entirely: a real CAPTCHA service (reCAPTCHA v3 / hCaptcha, which score behavioral
+signals server-side), leaning on your survey platform's own bot/fraud screening (CloudResearch/Connect,
+which this study already runs on), or server-side signals like unusually fast completion + no mouse movement.
+Happy to help wire up any of those if that's the actual concern — just flagging that what's in place today
+answers a different question ("was this response careless?") than "was this a bot?"
+</div>
+
+<p><em>Changed: frontend/src/js/experiment.js (captcha and attrition trial definitions) &middot;
+Unchanged, already correct: frontend/src/html/kai-survey.html</em></p>

@@ -1,0 +1,159 @@
+<meta charset="UTF-8">
+<title>Methods explainer — mixed models, Creative Perceptions scale</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 860px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1a1a1a; }
+  @media (prefers-color-scheme: dark) { body { color: #e6e6e6; } }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .meta { color: #777; font-size: 0.85rem; margin-bottom: 24px; }
+  h2 { font-size: 1.1rem; margin-top: 34px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  @media (prefers-color-scheme: dark) { h2 { border-color: #444; } }
+  h3 { font-size: 0.95rem; margin-top: 22px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #333; } }
+  th { color: #666; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { th { color: #999; } }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88em; }
+  @media (prefers-color-scheme: dark) { code { background: #333; } }
+  pre { background:#f0f0f0; padding:10px 14px; border-radius:6px; overflow-x:auto; font-size:0.85rem; }
+  @media (prefers-color-scheme: dark) { pre { background: #262626; } }
+  .note { background: #f6f6f6; border-left: 3px solid #999; padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .note { background: #262626; border-color: #666; } }
+  .toc { background: #f6f6f6; border-radius: 8px; padding: 14px 18px; margin: 18px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .toc { background: #222; } }
+  .toc ul { margin: 6px 0 0; padding-left: 20px; }
+  .example { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; margin: 12px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .example { background: #172554; border-color: #1e40af; } }
+</style>
+
+<h1>Methods explainer</h1>
+<div class="meta">What the model actually is, what Estimate/SE/t/p mean, and what the Creative Perceptions scale is out of</div>
+
+<div class="toc">
+<strong>Contents</strong>
+<ul>
+  <li><a href="#charset">The â€” character bug</a></li>
+  <li><a href="#lmm">What kind of model is this?</a></li>
+  <li><a href="#randomeffects">Why "random effects" for Participant and Face?</a></li>
+  <li><a href="#fallback">The convergence fallback ladder</a></li>
+  <li><a href="#coefs">Estimate, SE, t, and p — what each column means</a></li>
+  <li><a href="#scale">The Creative Perceptions scale — what it's out of</a></li>
+</ul>
+</div>
+
+<h2 id="charset">The â€” character bug</h2>
+<p>Fixed. Those HTML files declare no character encoding, so when a browser can't find one it falls back to
+guessing — often Windows-1252 instead of UTF-8. An em dash (—) is stored as 3 UTF-8 bytes; read back as
+Windows-1252, those 3 bytes print as <code>â€”</code> instead. I added <code>&lt;meta charset="UTF-8"&gt;</code>
+as the first line of all 6 report HTML files (the two from today plus the four earlier ones), which tells the
+browser the correct encoding explicitly. Reopen them and the dashes should look right.</p>
+
+<h2 id="lmm">What kind of model is this?</h2>
+<p>Every model in <code>model_results_25-74.csv</code> is a <strong>linear mixed-effects model</strong> (LMM),
+fit with R's <code>lme4::lmer()</code>. "Linear" just means it's a regression — a weighted sum of predictors
+predicts the rating. "Mixed" means it has two kinds of effects living in the same model:</p>
+
+<table>
+<tr><th>Fixed effects</th><td>The things you actually care about estimating: FaceAge, CreativePerceptions, their
+interaction, Big Five traits, FaceSex. One estimate each, shared across everyone. These are the rows in the
+results CSV.</td></tr>
+<tr><th>Random effects</th><td>Written as <code>(1 + FaceAge | Participant)</code> and <code>(1 | Face)</code>.
+These let the model absorb the fact that some participants just rate faces higher/lower overall (and some react
+more/less to age than others), and some faces just get rated higher/lower than others, without treating that
+as noise that contaminates the fixed effects you care about.</td></tr>
+</table>
+
+<p>Why not just an ordinary regression (<code>lm</code>)? Because the data is <strong>trial-level</strong> —
+each of the ~47 participants rated 60 different faces, so there are ~2,800 rows in the model, but they aren't
+independent: participant 40's 60 ratings are all a bit correlated with each other (some people just rate
+everyone more generously), and every participant who saw "face #17" contributes a data point that's correlated
+with everyone else who also rated face #17. Ordinary regression assumes every row is independent, which would
+be false here and would make the p-values too optimistic (understated). The random effects for Participant and
+Face are exactly what corrects for that.</p>
+
+<h2 id="randomeffects">Why "crossed" random effects for Participant and Face?</h2>
+<p>Participants and Faces are <strong>crossed</strong>, not nested — every participant rates (mostly) the same
+pool of 60 faces, so "participant" and "face" aren't hierarchical categories (like students-within-classrooms),
+they're two independent groupings that cut across the same rows. <code>(1 + FaceAge | Participant) + (1 |
+Face)</code> tells <code>lmer</code>: give every participant their own baseline generosity <em>and</em> their
+own personal slope for how much FaceAge moves their ratings, and separately give every face its own baseline
+rating. The <code>FaceAge × CreativePerceptions</code> fixed effect is then estimated <em>on top of</em> all
+that person-level and face-level variation, rather than being confounded by it.</p>
+
+<h2 id="fallback">The convergence fallback ladder</h2>
+<p>The pre-registration commits to a specific fallback order if the fullest model won't fit cleanly. That's
+why <code>model_results_25-74.csv</code> has a <code>spec_used</code> column:</p>
+<table>
+<tr><th>Spec</th><th>Random-effects formula</th><th>What changed</th></tr>
+<tr><td><code>full</code></td><td><code>(1 + FaceAge | Participant) + (1 | Face)</code></td><td>Pre-registered structure, as-is.</td></tr>
+<tr><td><code>no_slope_corr</code></td><td><code>(1 + FaceAge || Participant) + (1 | Face)</code></td><td>Keeps the per-participant FaceAge slope, but stops trying to also estimate how that slope correlates with each participant's baseline (fewer parameters).</td></tr>
+<tr><td><code>no_slope</code></td><td><code>(1 | Participant) + (1 | Face)</code></td><td>Drops the idea that FaceAge affects different participants differently — everyone gets the same FaceAge slope, only baselines vary by participant.</td></tr>
+</table>
+<p>In the 25–74 results: <code>secondary_kai</code> converged on the <code>full</code> spec (best case — the
+data supported the richest structure). The rest (<code>primary_confirmatory</code>, <code>secondary_survey_score</code>,
+<code>exploratory</code>) needed <code>no_slope</code>, and <code>secondary_work_habits</code> needed
+<code>no_slope_corr</code>. This isn't a red flag by itself — with ~47 participants there often just isn't
+enough data to reliably estimate individual-level slopes on top of everything else, so <code>lmer</code> gives
+up on that piece rather than reporting an unstable one.</p>
+
+<h2 id="coefs">Estimate, SE, t, and p — what each column means</h2>
+<p>Using the single most important row from the primary model as the running example:</p>
+<div class="example">
+<code>FaceAge:CreativePerceptions &nbsp; estimate = -0.197 &nbsp; SE = 0.048 &nbsp; t = -4.10 &nbsp; p &lt; .0001</code>
+</div>
+
+<table>
+<tr><th>Column</th><th>Meaning here</th></tr>
+<tr><td><strong>Estimate</strong></td><td>The model's best guess at the size and direction of the effect, in the
+rating's own units (the slider is 0–100). -0.197 means: for every 1-point increase in a participant's Creative
+Perceptions score, the effect of 1 year of face age on their rating drops by 0.197 points. It's a slope-on-a-
+slope — how much the FaceAge slope itself shifts as CreativePerceptions goes up.</td></tr>
+<tr><td><strong>SE (Standard Error)</strong></td><td>How uncertain that estimate is — the typical amount the
+estimate would bounce around if you reran the study with a fresh sample from the same population. Small SE
+relative to the estimate means the estimate is precise; here 0.048 is small relative to -0.197, so the model is
+fairly confident about both the sign and roughly the size.</td></tr>
+<tr><td><strong>t (t-statistic)</strong></td><td>Just Estimate ÷ SE (-0.197 / 0.048 ≈ -4.10). It answers "how
+many standard errors away from zero is this estimate?" As a rule of thumb, |t| above ~2 is usually notable;
+here it's over 4, which is a lot of standard errors from zero.</td></tr>
+<tr><td><strong>p (p-value)</strong></td><td>The probability of seeing a t this extreme (or more extreme) <em>if
+the true effect were actually zero</em> — i.e., if Creative Perceptions had nothing to do with the age-advice
+relationship. p &lt; .0001 means that would be extremely unlikely. It is <em>not</em> "the probability H1 is
+true" — it's a statement about how surprising this data would be under the null hypothesis of no effect.</td></tr>
+</table>
+
+<p>One wrinkle specific to this kind of model: <code>df</code> (degrees of freedom, also in the raw CSV, e.g.
+2713 for that row) isn't a clean integer like in a t-test you'd compute by hand. <code>lmerTest</code> (loaded
+alongside <code>lme4</code> in the Rmd) uses the <strong>Satterthwaite approximation</strong> to estimate an
+effective sample size for each fixed effect, accounting for the random-effects structure. You don't need to do
+anything with this number — it's what <code>lmerTest</code> uses internally to compute the p-value — but it's
+why you'll see decimals like <code>40.575</code> instead of a round number.</p>
+
+<h2 id="scale">The Creative Perceptions scale — what it's out of</h2>
+<p>From <code>frontend/src/html/creative-perceptions.html</code> and the scoring section of the Rmd:</p>
+<ul>
+<li><strong>11 items</strong>, each a statement about whether society/skills/work are shifting toward the
+"creative class" (e.g. <em>"Workplaces today increasingly value creativity and original thinking over following
+established procedures"</em>, <em>"Finding unique ideas or solutions to problems will be more important for
+success in 2050 than it is today"</em>).</li>
+<li><strong>5-point agree/disagree scale</strong> per item: Strongly Disagree = 1, Disagree = 2, Neither Agree
+nor Disagree = 3, Agree = 4, Strongly Agree = 5.</li>
+<li><strong>2 reverse-worded items</strong> (Q6: "the way people work and succeed... has not changed much,"
+Q11: "jobs will not require substantially greater knowledge") are flipped via <code>6 - x</code> before
+averaging, so agreeing with a "nothing is changing" statement counts as a <em>low</em> creative-perceptions
+score, same direction as everything else.</li>
+<li><strong>Final score = the mean of all 11 (post-reversal) items</strong> — not a sum — so it lands back on
+the original <strong>1–5 scale</strong>: 1 = strongly perceives no societal shift toward the creative class,
+5 = strongly perceives that shift as real, fast, and already reshaping what success requires.</li>
+</ul>
+<p>In the 25–74 sample, scores clustered around <strong>~4.0–4.5</strong> (e.g. participant 25 scored 4.45,
+participant 26 scored 4.09) — meaning most people in this batch lean toward agreeing the creative class is
+rising, not a scale spread evenly across 1–5. That matters for interpreting the interaction: the -0.197
+per-point effect is being multiplied mostly by values clustered near the top of the scale, not the full 1–5
+range, which is part of why the concrete numbers in the earlier report (slope ≈ 0.71 at CP = 2 vs. ≈ 0.23 at
+CP = 4.4) used those realistic, observed values rather than the scale's theoretical endpoints.</p>
+
+<p><em>Source: frontend/src/html/creative-perceptions.html (item wording, response options) &middot;
+face_survey_analysis.Rmd, "Likert recoding and reverse-scoring" + "Mixed-model fitting" sections (scoring and
+model-fitting code) &middot; exported_data/survey_scores_25-74.csv (observed score distribution)</em></p>

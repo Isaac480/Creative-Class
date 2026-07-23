@@ -1,0 +1,144 @@
+<meta charset="UTF-8">
+<title>Model results — participants 25–74 — is H1 supported?</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 860px; margin: 40px auto; padding: 0 20px; line-height: 1.55; color: #1a1a1a; }
+  @media (prefers-color-scheme: dark) { body { color: #e6e6e6; } }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .meta { color: #777; font-size: 0.85rem; margin-bottom: 24px; }
+  h2 { font-size: 1.05rem; margin-top: 32px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  @media (prefers-color-scheme: dark) { h2 { border-color: #444; } }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #eee; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #333; } }
+  th { color: #666; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { th { color: #999; } }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88em; }
+  @media (prefers-color-scheme: dark) { code { background: #333; } }
+  .note { background: #f6f6f6; border-left: 3px solid #999; padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .note { background: #262626; border-color: #666; } }
+  .caveat { border-left-color: #b45309; }
+  @media (prefers-color-scheme: dark) { .caveat { border-left-color: #f0b429; } }
+  .toc { background: #f6f6f6; border-radius: 8px; padding: 14px 18px; margin: 18px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .toc { background: #222; } }
+  .toc ul { margin: 6px 0 0; padding-left: 20px; }
+  .pill { font-size: 0.72rem; font-weight: 600; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+  .pill-yes { background: #bbf7d0; color: #14532d; }
+  @media (prefers-color-scheme: dark) { .pill-yes { background: #14532d; color: #bbf7d0; } }
+  .pill-no { background: #fecaca; color: #7f1d1d; }
+  @media (prefers-color-scheme: dark) { .pill-no { background: #7f1d1d; color: #fecaca; } }
+  .pill-na { background: #e5e5e5; color: #404040; }
+  @media (prefers-color-scheme: dark) { .pill-na { background: #404040; color: #e5e5e5; } }
+  .headline { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 16px 20px; margin: 18px 0; }
+  @media (prefers-color-scheme: dark) { .headline { background: #052e21; border-color: #14532d; } }
+  .headline h3 { margin: 0 0 6px; font-size: 1.05rem; }
+</style>
+
+<h1>Model results — participants 25–74 — is H1 supported?</h1>
+<div class="meta">exported_data/model_results_25-74.csv &middot; N = 47 analyzed (50 collected, 3 excluded) &middot; all in the <code>professional</code>-advice condition</div>
+
+<div class="toc">
+<strong>Contents</strong>
+<ul>
+  <li><a href="#headline">Short answer</a></li>
+  <li><a href="#h1">H1 — primary confirmatory test</a> <span class="pill pill-yes">SUPPORTED</span></li>
+  <li><a href="#h2">H2 — domain specificity</a> <span class="pill pill-na">NOT TESTABLE</span></li>
+  <li><a href="#secondary">Secondary IVs: Survey Score, Work Habits, KAI</a></li>
+  <li><a href="#exploratory">Exploratory model</a></li>
+  <li><a href="#caveats">How much to trust this</a></li>
+</ul>
+</div>
+
+<div class="headline" id="headline">
+<h3>Short answer</h3>
+<p><strong>H1 is supported in this batch</strong>: the pre-registered FaceAge × CreativePerceptions interaction
+is negative and significant (b = -0.197, p &lt; .0001) — participants who perceive a stronger rise of the
+creative class show a <em>weaker</em> positive relationship between a face's age and their willingness to seek
+professional advice from that face, exactly as predicted. <strong>H2 (domain specificity) still can't be
+tested</strong> — every analyzed participant is in the professional-advice condition; there's no emotional- or
+intelligence-condition data yet. The two other secondary IVs (Work Habits, KAI) don't show the effect; the
+composite Survey Score is in the right direction but not significant on its own.</p>
+</div>
+
+<h2 id="h1">H1 — primary confirmatory test <span class="pill pill-yes">SUPPORTED</span></h2>
+<p>Pre-registered model: <code>Rating ~ FaceAge × CreativePerceptions + Big5 + FaceSex + (1 + FaceAge | Participant) + (1 | Face)</code>,
+fit within the professional-advice condition. Fell back to <code>no_slope</code> (dropped the random slope
+entirely) in the convergence ladder.</p>
+
+<table>
+<tr><th>Term</th><th class="num">Estimate</th><th class="num">SE</th><th class="num">t</th><th class="num">p</th></tr>
+<tr><td>FaceAge</td><td class="num">1.097</td><td class="num">0.198</td><td class="num">5.53</td><td class="num">&lt; .0001</td></tr>
+<tr><td>CreativePerceptions</td><td class="num">5.047</td><td class="num">3.697</td><td class="num">1.37</td><td class="num">.180</td></tr>
+<tr><td><strong>FaceAge : CreativePerceptions</strong></td><td class="num"><strong>-0.197</strong></td><td class="num">0.048</td><td class="num">-4.10</td><td class="num"><strong>&lt; .0001</strong></td></tr>
+</table>
+
+<p><strong>What that means concretely:</strong> at low Creative Perceptions (~2 on the survey's scale), each
+extra year of estimated face age is worth about +0.71 points of professional-advice-seeking rating. At high
+Creative Perceptions (~4.4, roughly this batch's average), that same year is worth only about +0.23 points —
+the age-advice link is real but nearly a third as strong for people who see the creative class as ascendant.
+That's the predicted pathway: perceived rise of the creative class → weaker preference for older-looking faces
+as professional advisors.</p>
+
+<p>None of the five Big Five traits or FaceSex reach significance as controls (all p &gt; .37) — the interaction
+isn't being driven by a personality confound that happens to correlate with Creative Perceptions.</p>
+
+<h2 id="h2">H2 — domain specificity <span class="pill pill-na">NOT TESTABLE</span></h2>
+<p>Pre-registered model: <code>Rating ~ Condition × FaceAge × CreativePerceptions + FaceSex + (...)</code>,
+professional + emotional conditions pooled. <strong>Not in this results file</strong> — same situation as the
+9-pilot batch: everyone who actually completed the study in this range is in the <code>professional</code>
+condition. (Three participant rows in this ID range carry a garbled condition value and <code>status: timeout</code>
+with no submitted data — not real emotional/intelligence condition data, just abandoned sessions; worth a
+look at whatever assigns/writes the <code>condition</code> field if that recurs.) The mechanism-probe model
+(intelligence condition) is in the same boat — can't be fit until that condition has completers.</p>
+
+<h2 id="secondary">Secondary IVs: Survey Score, Work Habits, KAI</h2>
+<table>
+<tr><th>Model</th><th>Spec used</th><th>Interaction term</th><th class="num">Estimate</th><th class="num">p</th><th>Direction vs. H1</th></tr>
+<tr><td>Composite Survey Score</td><td><code>no_slope</code></td><td>FaceAge:SurveyScore</td><td class="num">-0.051</td><td class="num">.133</td><td>Same direction, not significant</td></tr>
+<tr><td>Work Habits</td><td><code>no_slope_corr</code></td><td>FaceAge:WorkHabits</td><td class="num">+0.055</td><td class="num">.538</td><td>Opposite direction, null</td></tr>
+<tr><td>KAI</td><td><code>full</code></td><td>FaceAge:KAI</td><td class="num">-0.043</td><td class="num">.815</td><td>Same direction, essentially null</td></tr>
+</table>
+<p>Of the three constituents of "creative-class alignment," only Creative Perceptions itself (the primary IV)
+shows the effect. Work Habits (how creative-class-aligned the participant's own job is) and KAI (personal
+adaptiveness/innovativeness) don't — at this sample size, at least. The composite blends all three, so a real
+CreativePerceptions effect gets diluted by two null components, which is consistent with why the composite
+lands short of significance despite pointing the same direction. Notably, the KAI model is the only one that
+converged with the <em>full</em> pre-registered random-effects structure — no fallback needed.</p>
+
+<h2 id="exploratory">Exploratory model</h2>
+<p>Adds PsychRichness and demographics (age, sex, education, SES, political orientation) as exploratory main
+effects. The core FaceAge:CreativePerceptions estimate replicates almost exactly (-0.1968, p &lt; .0001) —
+expected, since it's the same 47 participants with extra covariates bolted on, not new data.</p>
+<p>One exploratory term reaches p &lt; .05: <code>PoliticalEconomic = "Somewhat conservative"</code>
+(b = -29.09, p = .012, relative to the reference category). <strong>Treat this as noise, not a finding</strong> —
+see the caveat below on why.</p>
+
+<h2 id="caveats">How much to trust this</h2>
+
+<div class="note">
+<strong>This is a real, if small, positive signal — not just "pipeline sanity check" territory.</strong> Unlike
+the 9-participant pilot (which existed purely to confirm the code ran correctly), this batch's key p-value
+(4.3 &times; 10⁻⁵) is small enough that it's unlikely to be pure noise, and it landed in the pre-registered
+direction. That said, N = 47 is still ~8% of the planned 600, all from one condition, and it's the first batch
+where this test was even meaningfully powered — one significant result at this stage is encouraging, not proof.
+</div>
+
+<div class="note caveat">
+<strong>The exploratory model's p = .012 hit is fragile by construction.</strong> That model spends fixed-effect
+parameters on ~30 participant-level terms (5 Big Five + PsychRichness + age + sex + 6 education levels + SES +
+6 economic-orientation levels + 6 social-orientation levels) with only 47 participants to estimate them from —
+which is why its Satterthwaite df for participant-level terms drops to ~17, versus ~40 in the other models. With
+that little residual information per parameter and no correction for the ~25 terms tested, a single p = .012 is
+exactly the kind of result you'd expect to see by chance and that could easily flip sign with 10 more
+participants. Worth watching as the sample grows, not worth acting on now.
+</div>
+
+<div class="note">
+<strong>3 of 50 excluded</strong> (participants 32, 52, 54) — same pre-registered rule as before (reliability
+&le; 0 for 32/54, straight-lining for 52). None of the three would have changed the direction of the primary
+result; they're already out of the N = 47 used above.
+</div>
+
+<p><em>Source: exported_data/model_results_25-74.csv &middot; exclusions in exported_data/exclusions_25-74.csv
+&middot; hypotheses per "Isaac pre-registration draft.txt"</em></p>

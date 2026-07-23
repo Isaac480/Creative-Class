@@ -1,0 +1,39 @@
+﻿Data collection
+No, no data have been collected for this study yet. (A small pilot, n = 4 lab members, was used solely to refine procedures and estimate test-retest reliability; it will not be included in any reported analyses.)
+Hypothesis
+We hypothesize that individuals who perceive the creative class to be on the rise will show a weaker positive association between facial age and willingness to seek professional advice.
+Proposed pathway: Perceived rise of the creative class → devaluation of accumulated knowledge and experience → devaluation of older adults as advisors → reduced professional advice-seeking from older-looking faces.
+We predict this interaction will be specific to the professional-advice condition and attenuated or absent in the emotional-advice condition, because emotional advice lies outside the proposed pathway. This domain specificity will be tested directly via a Condition × Face Age × Creative Perceptions interaction.
+The perceived-intelligence condition serves as an exploratory mechanism probe. If the pathway operates through perceived competence, the Face Age × Creative Perceptions interaction should pattern similarly in this condition. However, because smartness judgments also reflect appearance-based stereotypes independent of knowledge relevance, and because the between-subjects design precludes formal mediation analysis, this condition cannot isolate the mediating process.
+We will additionally explore three constituents of creative-class alignment: (1) Creative Perceptions — perceptions of current and future rise of the creative class (primary IV); (2) Work Habits — alignment of the participant's own job with the creative class (secondary IV); (3) Personal ideals — adaptiveness/innovativeness as measured by the KAI (secondary IV).
+Dependent variable
+Participants rate 60 artificially generated faces on one question (by condition), using a continuous 0–100 slider:
+1. How likely are you to seek practical/professional advice from this person?
+2. How likely are you to seek emotional advice from this person?
+3. How smart does this person look?
+Faces are generated using techniques adapted from Peterson et al. (2022) and controlled for attractiveness and happiness. The first six male and six female faces from each age bracket (20–30, 30–40, 40–50, 50–60, 60+) are taken from the original 1,004-face dataset. One male and one female face per bracket (10 faces) are repeated, at least 30 trials after first presentation, yielding 70 trials in randomized order per participant. Main analyses use the first presentation of each face only; second presentations are used solely to compute within-participant test-retest reliability. Face Age is the continuous estimated age of each face, mean-centered.
+Conditions
+600 participants will be randomly assigned to one of three between-subjects conditions: (1) professional advice, (2) emotional advice, (3) perceived intelligence (exploratory mechanism probe).
+Analyses
+Measurement order: face-rating task → Creative Perceptions → Work Habits → KAI → Big Five → Three Good Lives (psychological richness) → demographics (age, sex, economic background, political beliefs). The face task always precedes all self-report measures to avoid priming.
+All face-rating analyses use linear mixed-effects models (lme4::lmer) with crossed random effects for participants and faces. If a model fails to converge, we will first drop the random-slope correlation, then the random slope, reporting all attempted specifications.
+Primary confirmatory test (professional-advice condition): Rating ~ FaceAge × CreativePerceptions + Big5 + FaceSex + (1 + FaceAge | Participant) + (1 | Face) The Big Five traits are included as control variables (main effects) to ensure the interaction is not driven by general personality dispositions such as openness. H1 is supported by a significant negative FaceAge × CreativePerceptions interaction (higher perceived rise → weaker age–advice slope).
+Domain-specificity test (professional + emotional conditions pooled): Rating ~ Condition × FaceAge × CreativePerceptions + FaceSex + (1 + FaceAge | Participant) + (1 | Face) H2 is supported by a significant three-way interaction, indicating the FaceAge × CreativePerceptions effect is stronger in the professional than the emotional condition.
+Secondary confirmatory tests: (a) a composite Survey Score (equal-weight mean of z-scored Creative Perceptions, Work Habits, and KAI) replacing Creative Perceptions in the primary model; (b) separate models entering Work Habits × FaceAge and KAI × FaceAge.
+Mechanism probe (exploratory): the primary model fitted within the perceived-intelligence condition.
+Exploratory analyses: psychological richness (Three Good Lives) and demographics are entered purely exploratorily as main effects and, where theoretically justified, FaceAge interactions: Rating ~ FaceAge × CreativePerceptions + Big5 + PsychRichness + ParticipantAge + ParticipantSex + ParticipantRace + Education + SES + PoliticalOrientation + FaceSex + (1 + FaceAge | Participant) + (1 | Face) We will also explore whether psychological richness correlates with Creative Perceptions.
+Outliers and exclusions
+Participants are excluded if they meet any of the following, applied blind to condition:
+1. Within-participant test-retest reliability (Pearson r across the 10 repeated faces) ≤ 0, indicating chance-level or inverted consistency. Because r is estimated from only 10 pairs, low positive values can arise from sampling noise even among attentive responders, whereas a non-positive r indicates responding no more consistently than chance. A sensitivity analysis will repeat all confirmatory tests using a stricter cutoff of r < .30.
+2. Failure of any attention check, or failure to type the highlighted word (bot check).
+3. Self-reported prior completion of the study.
+4. Self-reported attentiveness < 50 (0–100), or self-reported distractedness > 50 (0–100).
+5. Identical ratings on more than 90% of trials (straight-lining).
+Sample size
+600 participants (200 per condition), set a priori based on pilot reliability and resource constraints. A simulation-based sensitivity analysis for the FaceAge × CreativePerceptions interaction will be reported alongside the results.
+Other
+Occupation is collected via an SOC-based dropdown plus an open-ended job title/description. Open-ended responses are coded into Florida's (2002) creative vs. non-creative classes using a codebook mapping occupations to SOC categories. We will first validate an LLM coder against two human raters (blind to participants' other responses) on an initial subset, reporting inter-rater agreement (Cohen's κ). If agreement is adequate, the LLM will code the full sample; otherwise human blind coding will be used, with disagreements resolved by discussion.
+Name
+Creative Perceptions and the Devaluation of the Elderly — Testing whether perceiving the rise of the creative class predicts an age bias in advice-seeking, via devaluation of accumulated knowledge.
+Type of project
+Experiment; Survey.

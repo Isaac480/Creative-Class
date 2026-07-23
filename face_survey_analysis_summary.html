@@ -1,0 +1,163 @@
+<meta charset="UTF-8">
+<title>Face survey analysis — pipeline rebuilt on pre-registration</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 820px; margin: 40px auto; padding: 0 20px; line-height: 1.55; color: #1a1a1a; }
+  @media (prefers-color-scheme: dark) { body { color: #e6e6e6; } }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .meta { color: #777; font-size: 0.85rem; margin-bottom: 24px; }
+  h2 { font-size: 1.05rem; margin-top: 32px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  @media (prefers-color-scheme: dark) { h2 { border-color: #444; } }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 5px 9px; border-bottom: 1px solid #eee; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #333; } }
+  th { color: #666; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { th { color: #999; } }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88em; }
+  @media (prefers-color-scheme: dark) { code { background: #333; } }
+  .note { background: #f6f6f6; border-left: 3px solid #999; padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .note { background: #262626; border-color: #666; } }
+  .fixed { border-left-color: #b45309; }
+  @media (prefers-color-scheme: dark) { .fixed { border-left-color: #f0b429; } }
+  .toc { background: #f6f6f6; border-radius: 8px; padding: 14px 18px; margin: 18px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .toc { background: #222; } }
+  .toc ul { margin: 6px 0 0; padding-left: 20px; }
+  .pill { font-size: 0.72rem; font-weight: 600; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+  .pill-fixed { background: #fde68a; color: #713f12; }
+  @media (prefers-color-scheme: dark) { .pill-fixed { background: #713f12; color: #fde68a; } }
+  .pill-caveat { background: #fecaca; color: #7f1d1d; }
+  @media (prefers-color-scheme: dark) { .pill-caveat { background: #7f1d1d; color: #fecaca; } }
+</style>
+
+<h1>Face survey analysis — rebuilt to follow the pre-registration</h1>
+<div class="meta">face_survey_analysis.Rmd &middot; 9 pilot participants (7-10, 20-24) &middot; knits clean end-to-end &middot; updated with reliability CSV + cross-participant agreement plot</div>
+
+<div class="toc">
+<strong>Contents</strong>
+<ul>
+  <li><a href="#changed">What changed</a></li>
+  <li><a href="#bugs">Two scoring bugs found and fixed</a> <span class="pill pill-fixed">FIXED</span></li>
+  <li><a href="#exclusions">Exclusions</a></li>
+  <li><a href="#agreement">Reliability + how much participants agree with each other</a> <span class="pill pill-fixed">NEW</span></li>
+  <li><a href="#scores">Survey scores (9 participants)</a></li>
+  <li><a href="#models">Model results</a> <span class="pill pill-caveat">PILOT ONLY</span></li>
+  <li><a href="#gaps">What still can't be tested</a></li>
+</ul>
+</div>
+
+<h2 id="changed">What changed</h2>
+<p>The Rmd previously ran an ad hoc pipeline (filter to 4 participants, correlate
+survey scores against the age of each person's Q1/median/Q3-rated face) that
+predates <code>Isaac pre-registration draft.txt</code>. It's now rebuilt to
+actually implement that pre-registration: exclusion criteria, TIPI Big Five
+scoring, the composite Survey Score, and the pre-registered
+<code>lme4</code> mixed-effects models — run on all 9 real participants
+collected so far. The old quartile-face-age correlation section and its two
+plots are removed; they weren't part of the actual pre-registered plan and are
+superseded by the trial-level mixed models.</p>
+
+<h2 id="bugs">Two scoring bugs found and fixed</h2>
+
+<div class="note fixed">
+<strong>Work Habits reverse-scoring.</strong> The old pipeline reverse-scored
+Q3, Q9, and Q12 — but reading the actual item wording, those are all
+positively-phrased items ("solving problems with no obvious answer,"
+"independence and freedom," "unique ideas or solutions"). The one genuinely
+reverse-worded item, Q6 ("the tasks on the job are simple and uncomplicated"),
+wasn't being reversed at all. This also matches the reverse item in the Work
+Design Questionnaire this survey is adapted from. Fixed to reverse Q6 only —
+you confirmed this while I was planning the rewrite.
+</div>
+
+<div class="note fixed">
+<strong>Big Five and Three Good Lives were never being converted to numbers.</strong>
+Both surveys store responses as text like <code>"Somewhat Agree (5)"</code>,
+not plain numbers. The old pipeline read them as-is, so any Big Five or
+psychological-richness computation would have silently produced garbage (or, as
+now, thrown an error, which is how this was caught). Both are now parsed via
+the trailing <code>(N)</code> before averaging. Spot-checked participant 20's
+Big Five scores and Work Habits score by hand against their raw responses —
+both match the pipeline's output exactly.
+</div>
+
+<h2 id="exclusions">Exclusions</h2>
+<p><strong>0 of 9 excluded.</strong> Reliability ranges 0.65-0.93 (well above
+both the r&le;0 and the stricter r&lt;.30 sensitivity cutoff), nobody
+self-reported prior participation, seriousness/attentiveness ranges 70-100
+(all above the 50 cutoff), and the highest straight-lining share was 53% (well
+under the 90% cutoff). The bot-check/attention-check criterion can't be
+evaluated from stored data at all — both checks are validated client-side and
+block submission on failure, so every stored participant already passed by
+construction.</p>
+
+<h2 id="agreement">Reliability + how much participants agree with each other</h2>
+<p>Within-participant test-retest reliability (Step 3 in the Rmd) is written back
+out to its own file, <code>exported_data/within_participant_reliability.csv</code>
+— same numbers as in the exclusions table above, just on their own for easy
+reference.</p>
+
+<p>To see cross-participant agreement directly, every participant's all-70 ratings
+are plotted on one chart, one row per face (sorted by that face's mean rating),
+colored by participant, with a black tick marking the mean:</p>
+
+<img src="exported_data/face_ratings_by_participant.png" alt="Face ratings by participant" style="max-width:100%; border-radius:8px; margin:10px 0;">
+
+<div class="note">
+<strong>8 of 9 participants track each other reasonably well</strong> — for most
+faces their ratings cluster loosely around the same region, moving up and down
+together as the sorted faces get more/less favorably rated overall. But
+<strong>participant 22 (light blue) stands apart</strong>: their ratings sit
+near 0 for the large majority of faces regardless of what everyone else says
+about that face — median rating 0, mean ~12 (vs. the rest of the group visibly
+spread 50-90 across the same faces). That's consistent with what the
+straight-lining check already flagged as this batch's highest share (53% of
+trials rated identically) without crossing the 90% exclusion cutoff — so it
+passes the pre-registered exclusion rule as written, but it's worth a look at
+participant 22's raw responses/comments before treating their data as
+equivalent to the other 8.
+</div>
+
+<h2 id="scores">Survey scores (9 participants)</h2>
+<table>
+<tr><th>ID</th><th class="num">KAI (/4)</th><th class="num">Creative Perc. (/5)</th><th class="num">Work Habits (/5)</th><th class="num">Extraversion</th><th class="num">Openness</th></tr>
+<tr><td>7</td><td class="num">3.00</td><td class="num">3.27</td><td class="num">4.92</td><td class="num">5.0</td><td class="num">6.0</td></tr>
+<tr><td>8</td><td class="num">2.97</td><td class="num">3.36</td><td class="num">4.25</td><td class="num">3.0</td><td class="num">5.5</td></tr>
+<tr><td>9</td><td class="num">2.48</td><td class="num">4.45</td><td class="num">4.42</td><td class="num">1.5</td><td class="num">6.0</td></tr>
+<tr><td>10</td><td class="num">2.73</td><td class="num">3.55</td><td class="num">4.50</td><td class="num">2.0</td><td class="num">5.0</td></tr>
+<tr><td>20</td><td class="num">2.58</td><td class="num">3.45</td><td class="num">4.00</td><td class="num">2.5</td><td class="num">6.0</td></tr>
+<tr><td>21</td><td class="num">2.97</td><td class="num">2.91</td><td class="num">3.25</td><td class="num">7.0</td><td class="num">3.0</td></tr>
+<tr><td>22</td><td class="num">3.09</td><td class="num">3.55</td><td class="num">3.83</td><td class="num">4.0</td><td class="num">5.0</td></tr>
+<tr><td>23</td><td class="num">2.79</td><td class="num">2.82</td><td class="num">3.92</td><td class="num">2.5</td><td class="num">4.0</td></tr>
+<tr><td>24</td><td class="num">3.48</td><td class="num">4.00</td><td class="num">4.42</td><td class="num">1.0</td><td class="num">6.0</td></tr>
+</table>
+
+<h2 id="models">Model results <span class="pill pill-caveat">pilot only, not a real test</span></h2>
+<p>All 5 runnable pre-registered models fit (through the fallback ladder: full
+random-slope structure &rarr; drop slope correlation &rarr; drop slope
+entirely), each reported with whichever specification it landed on:</p>
+<table>
+<tr><th>Model</th><th>Spec used</th><th>Converged cleanly</th></tr>
+<tr><td>Primary confirmatory (FaceAge × CreativePerceptions)</td><td><code>no_slope</code></td><td>Yes</td></tr>
+<tr><td>Secondary: composite SurveyScore</td><td><code>no_slope_corr</code></td><td>Yes</td></tr>
+<tr><td>Secondary: Work Habits</td><td><code>full</code></td><td>Yes</td></tr>
+<tr><td>Secondary: KAI</td><td><code>full</code></td><td>Yes</td></tr>
+<tr><td>Exploratory (n=5, adds PsychRichness + demographics)</td><td><code>no_slope</code></td><td>No (singular)</td></tr>
+</table>
+<p><strong>None of this is a meaningful test of H1/H2</strong> — it's 9 of the
+planned 600 participants, run purely to confirm the pipeline produces sane,
+correctly-scored output end to end. Full tidy coefficient table is in
+<code>exported_data/model_results.csv</code>.</p>
+
+<h2 id="gaps">What still can't be tested</h2>
+<p>All 9 pilot participants are in the <code>professional</code> advice
+condition — there's no <code>emotional</code> or <code>intelligence</code>-condition
+data in the database yet. The domain-specificity test
+(Condition × FaceAge × CreativePerceptions) and the mechanism-probe model are
+documented in the Rmd with their pre-registered formulas, but not fit — nothing
+to contrast against yet. <code>PsychRichness</code> and the political/education/SES
+exploratory covariates only exist for participants 20-24 (added to the survey
+after 7-10 took part), so the exploratory model effectively runs on n=5.</p>
+
+<p><em>Source: face_survey_analysis.Rmd &middot; outputs in exported_data/
+(exclusions.csv, survey_scores.csv, model_results.csv, filtered_data_9participants.csv)</em></p>

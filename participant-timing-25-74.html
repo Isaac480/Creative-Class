@@ -1,0 +1,375 @@
+<meta charset="UTF-8">
+<title>Participant timing — participants 25–74</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; line-height: 1.55; color: #1a1a1a; }
+  @media (prefers-color-scheme: dark) { body { color: #e6e6e6; } }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .meta { color: #777; font-size: 0.85rem; margin-bottom: 24px; }
+  h2 { font-size: 1.05rem; margin-top: 34px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  @media (prefers-color-scheme: dark) { h2 { border-color: #444; } }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.85rem; }
+  th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid #eee; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #333; } }
+  th { color: #666; font-weight: 600; text-align: center; }
+  @media (prefers-color-scheme: dark) { th { color: #999; } }
+  td:first-child, th:first-child { text-align: left; }
+  .num { font-variant-numeric: tabular-nums; }
+  .cell { border-radius: 4px; padding: 4px 7px; }
+  .total { font-weight: 600; }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88em; }
+  @media (prefers-color-scheme: dark) { code { background: #333; } }
+  pre { background:#f0f0f0; padding:10px 14px; border-radius:6px; overflow-x:auto; font-size:0.85rem; }
+  @media (prefers-color-scheme: dark) { pre { background: #262626; } }
+  .note { background: #f6f6f6; border-left: 3px solid #999; padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .note { background: #262626; border-color: #666; } }
+  .flag { border-left-color: #b45309; }
+  @media (prefers-color-scheme: dark) { .flag { border-left-color: #f0b429; } }
+  .toc { background: #f6f6f6; border-radius: 8px; padding: 14px 18px; margin: 18px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .toc { background: #222; } }
+  .toc ul { margin: 6px 0 0; padding-left: 20px; }
+  .big { font-size: 1.3rem; font-weight: 600; }
+  .stat-row { display:flex; gap: 28px; flex-wrap: wrap; margin: 14px 0 18px; }
+  .stat { min-width: 110px; }
+  .stat .label { font-size: 0.78rem; color: #777; }
+  .stat .val { font-size: 1.15rem; font-weight: 600; }
+  .legend { font-size: 0.82rem; color: #777; margin-top: 6px; }
+  .swatch-row { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+  .swatch { width: 22px; height: 12px; border-radius: 2px; }
+  .scroll { overflow-x: auto; }
+  .pill { font-size: 0.72rem; font-weight: 600; padding: 1px 7px; border-radius: 10px; margin-left: 6px; background: #fde68a; color: #713f12; }
+  @media (prefers-color-scheme: dark) { .pill { background: #713f12; color: #fde68a; } }
+
+  .viz-root {
+    --surface-1: #fcfcfb; --text-primary:#0b0b0b; --text-secondary:#52514e; --muted:#898781;
+    --s-consent:#2a78d6; --s-attrition:#1baf7a; --s-main:#eda100; --s-captcha:#008300; --s-survey:#4a3aa7; --s-debrief:#e34948;
+  }
+  @media (prefers-color-scheme: dark) {
+    .viz-root { --surface-1:#1a1a19; --text-primary:#ffffff; --text-secondary:#c3c2b7; --muted:#898781;
+      --s-consent:#3987e5; --s-attrition:#199e70; --s-main:#c98500; --s-captcha:#008300; --s-survey:#9085e9; --s-debrief:#e66767; }
+  }
+  .chart-row { display:flex; align-items:center; gap:8px; margin:3px 0; }
+  .chart-label { width:32px; font-size:0.76rem; color:var(--text-secondary); flex-shrink:0; }
+  .bar-track { flex:1; }
+  .bar { height:13px; border-radius:3px; display:flex; overflow:hidden; }
+  .seg { height:100%; position:relative; }
+  .seg + .seg { margin-left:1px; }
+  .seg[data-tip]:hover::after {
+    content: attr(data-tip);
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--text-primary); color:var(--surface-1);
+    padding:4px 8px; border-radius:4px; font-size:0.78rem; white-space:nowrap; z-index:5;
+  }
+  .chart-total { width:58px; text-align:right; font-size:0.76rem; font-variant-numeric: tabular-nums; color:var(--text-secondary); flex-shrink:0; }
+  .idle-mark { width:44px; text-align:right; font-size:0.76rem; font-variant-numeric: tabular-nums; color:#c2410c; flex-shrink:0; }
+  @media (prefers-color-scheme: dark) { .idle-mark { color:#f0b429; } }
+</style>
+
+<h1>How long did each participant take? — participants 25–74</h1>
+<div class="meta">data/temp/data.csv &middot; 50 participants, all with a <code>worker_id</code> &middot; same method as <a href="participant-timing-20-24.html">participant-timing-20-24.html</a>, extended with per-trial gap detection inside the main task</div>
+
+<div class="toc">
+<strong>Contents</strong>
+<ul>
+  <li><a href="#totals">Total time per participant</a></li>
+  <li><a href="#idle">Idle time: this batch isn't as clean as 7–10 / 20–24</a> <span class="pill">↑ idle vs. prior batches</span></li>
+  <li><a href="#midtask">Multi-minute gaps inside the main rating task</a> <span class="pill">NEW</span></li>
+  <li><a href="#breakdown">Where the time went, per participant</a></li>
+  <li><a href="#surveys">Per-survey completion time</a></li>
+  <li><a href="#notable">What stands out</a></li>
+  <li><a href="#how">Method</a></li>
+</ul>
+</div>
+
+<h2 id="totals">Total time per participant</h2>
+<p>Total time is <code>time_elapsed</code> on each participant's last trial, same definition as the prior two
+reports. Across all 50: </p>
+
+<div class="stat-row">
+  <div class="stat"><div class="label">Mean</div><div class="val">15.6 min</div></div>
+  <div class="stat"><div class="label">Median</div><div class="val">14.8 min</div></div>
+  <div class="stat"><div class="label">Fastest</div><div class="val">7.5 min <span style="font-weight:400;font-size:0.8rem;color:#777">(P72)</span></div></div>
+  <div class="stat"><div class="label">Slowest</div><div class="val">25.4 min <span style="font-weight:400;font-size:0.8rem;color:#777">(P71)</span></div></div>
+</div>
+
+<p>Mean is close to the 20–24 batch's 20.8 minutes, but this batch spans a much wider range (7.5–25.4 min vs.
+13.8–26.6 min on 5 people) — expected with 50 people instead of 5, but see below for <em>why</em> some of that
+spread exists.</p>
+
+<h2 id="idle">Idle time: this batch isn't as clean as 7–10 / 20–24</h2>
+<p>Same signal as before — summed <code>blur</code>→<code>focus</code> gaps from jsPsych's fullscreen plugin.
+The prior 5-participant batch had 0–2.7 seconds of this, total, across everyone. This batch does not:</p>
+
+<div class="stat-row">
+  <div class="stat"><div class="label">Mean idle</div><div class="val">57.5 s</div></div>
+  <div class="stat"><div class="label">Median idle</div><div class="val">8.0 s</div></div>
+  <div class="stat"><div class="label">&gt;10s idle</div><div class="val">24 / 50</div></div>
+  <div class="stat"><div class="label">&gt;60s idle</div><div class="val">7 / 50</div></div>
+</div>
+
+<p>The mean is dragged up by a handful of participants who genuinely tabbed away for a while:</p>
+<table>
+<tr><th>ID</th><th>Idle time</th><th>Where</th></tr>
+<tr><td>70</td><td class="num">766.7 s (12.8 min)</td><td>one 752.6s gap during <strong>consent</strong> — tabbed away almost immediately and came back before submitting</td></tr>
+<tr><td>67</td><td class="num">633.9 s (10.6 min)</td><td>spread across three separate gaps in <strong>main</strong> (171.8s), <strong>attrition</strong> (91.0s), and <strong>survey</strong> (68.9s)</td></tr>
+<tr><td>38</td><td class="num">384.1 s (6.4 min)</td><td>spread across several shorter gaps, all inside <strong>survey</strong> pages</td></tr>
+<tr><td>32</td><td class="num">276.6 s (4.6 min)</td><td>mostly one gap during <strong>consent</strong> — see also the exclusions note below</td></tr>
+<tr><td>41</td><td class="num">149.6 s (2.5 min)</td><td>one 148.9s gap during <strong>consent</strong>, right at the very first page</td></tr>
+</table>
+<p>10 of the 50 have exactly 0 idle time (as clean as the prior batches); the other 40 have at least a little,
+mostly single-digit seconds that's not worth worrying about.</p>
+
+<div class="note flag">
+<strong>Consent is where tab-aways cluster.</strong> 3 of the 5 biggest idle gaps (70, 32, 41) happen on the
+very first page, before the task has even started — plausibly people opening the link, getting distracted, and
+coming back, rather than anything about the study itself. Doesn't affect data quality (nothing is being
+measured yet), but worth knowing if total-time is ever used as a screening variable.
+</div>
+
+<h2 id="midtask">Multi-minute gaps inside the main rating task</h2>
+<p>Blur/focus only catches someone switching windows or tabs. Looking at per-trial time within the
+<strong>main</strong> face-rating phase turns up something the idle metric above misses entirely: individual
+slider-rating trials that took over a minute, with <em>no</em> accompanying blur event — meaning the tab stayed
+in focus the whole time.</p>
+
+<table>
+<tr><th>ID</th><th>Long main-task trials</th><th>Idle (blur/focus) for comparison</th></tr>
+<tr><td>66</td><td class="num">424.8s, 183.9s, 141.9s</td><td class="num">16.4s</td></tr>
+<tr><td>62</td><td class="num">231.0s, 186.1s</td><td class="num">0.4s</td></tr>
+<tr><td>67</td><td class="num">173.9s, 178.8s</td><td class="num">633.9s (already flagged above)</td></tr>
+<tr><td>51</td><td class="num">152.4s</td><td class="num">62.4s</td></tr>
+<tr><td>32</td><td class="num">95.7s, 90.1s</td><td class="num">276.6s (already flagged above)</td></tr>
+<tr><td>68</td><td class="num">75.1s, 89.7s</td><td class="num">4.4s</td></tr>
+<tr><td>65</td><td class="num">75.9s</td><td class="num">0.0s</td></tr>
+</table>
+
+<p>7 of 50 (14%) have at least one face-rating trial over a minute. Participant 66 is the clearest case — 12.6
+minutes of their 22.5-minute session is two individual slider trials, with only 16.4s of registered idle time
+anywhere in the whole session. That's a real gap in the idle-detection method: it only catches someone who
+switches windows, not someone who stays on the tab and pauses (distraction, interruption, or just a genuinely
+hard rating decision). Not a data-quality problem by itself — 66's reliability is 0.47, unremarkable, not
+excluded — but worth knowing before treating "0 idle time" as proof nothing happened.</p>
+
+<h2 id="breakdown">Where the time went, per participant</h2>
+<p>Same phase segments as the 20–24 report. Bar length is proportional to total time; the number on the right
+is total idle (blur/focus) time for that participant, shown only when non-trivial. Hover a segment for its
+exact duration.</p>
+
+<div class="viz-root">
+<div id="chart"></div>
+<div class="legend">
+  <span class="legend-item"><span class="swatch" style="background:var(--s-consent)"></span>consent</span>
+  <span class="legend-item"><span class="swatch" style="background:var(--s-attrition)"></span>attrition check</span>
+  <span class="legend-item"><span class="swatch" style="background:var(--s-main)"></span>main task</span>
+  <span class="legend-item"><span class="swatch" style="background:var(--s-captcha)"></span>captcha</span>
+  <span class="legend-item"><span class="swatch" style="background:var(--s-survey)"></span>survey</span>
+  <span class="legend-item"><span class="swatch" style="background:var(--s-debrief)"></span>debriefing</span>
+</div>
+</div>
+
+<h2 id="surveys">Per-survey completion time</h2>
+<p>Same approach as <code>survey_completion_times.html</code> — each survey is one page/one trial, so its
+<code>rt</code> is exactly the time spent on that page. Shading is relative to each column's own min–max
+(darker = slower).</p>
+<div class="scroll" id="table-container"></div>
+<div class="legend">
+  Shading legend (relative to each column's own min-max):
+  <div class="swatch-row">
+    <span>fast</span>
+    <span class="swatch" style="background:#cde2fb"></span>
+    <span class="swatch" style="background:#86b6ef"></span>
+    <span class="swatch" style="background:#3987e5"></span>
+    <span class="swatch" style="background:#184f95"></span>
+    <span>slow</span>
+  </div>
+</div>
+
+<h2 id="notable">What stands out</h2>
+
+<div class="note flag">
+<strong>Participant 32 (already excluded for reliability failure) was also the fastest or near-fastest on
+every single survey</strong> — Creative Perceptions 11.8s, Work Habits 20.0s, KAI 33.4s, Big Five 10.0s, Three
+Good Lives 11.1s, Demographics 45.0s — all at or near this batch's minimum for that survey. Their reliability
+was -0.06 (already flagged by the pre-registered exclusion rule). Consistent story: this looks like someone
+clicking through without reading, not a fluke correlation.
+</div>
+
+<div class="note">
+<strong>Participant 52 (excluded for straight-lining) was not fast</strong> — their survey times are mid-to-slow
+(Demographics 237.9s, KAI 120.5s), not rushed. Worth noting because it's the opposite pattern from participant
+32: straight-lining here means answering everything the same regardless of how much time was spent, not
+speeding through. Time-on-task alone wouldn't have caught this one.
+</div>
+
+<div class="note">
+<strong>Participant 68's Work Habits page (456.3s / 7.6 min) is the single longest survey time in the whole
+batch</strong> — nearly 30% longer than the next slowest (participant 73, 384.7s, also Work Habits). Both wrote
+substantive job descriptions (240 and 159 characters respectively), so this is plausibly genuine writing/thinking
+time rather than idle — Work Habits also has the free-text job-description field, same pattern flagged for
+participant 23 in the prior batch.
+</div>
+
+<div class="note flag">
+<strong>Participant 65's Demographics page took 490s (8.2 min) with zero registered idle time</strong> — but
+their actual answers are short and simple (no long free text; "comments" field empty, "issues" field is "N/A").
+There's no blur/focus event around it, so this looks like the same blind spot as the mid-task gaps above:
+someone stepped away without switching windows or tabs.
+</div>
+
+<div class="note">
+<strong>KAI is still the slowest "quick" survey for most people</strong> (median ~100s across the batch, same
+pattern as the 7-10/20-24 batch), consistent with it being the longest instrument (33 items). Big Five and
+Three Good Lives remain the fastest for nearly everyone.
+</div>
+
+<h2 id="how">Method</h2>
+<p>Same reusable script as the prior report, unchanged except it now also tracks per-trial gaps within a phase
+(used for the mid-task section above) and is scoped to participants 25–74:</p>
+
+<pre>import ast
+import csv
+import sys
+
+csv.field_size_limit(sys.maxsize)
+
+def analyze_participant(row):
+    trials = ast.literal_eval(row["json_data"])
+    total_ms = trials[-1]["time_elapsed"]
+
+    events = sorted(
+        (be for t in trials for be in (t.get("browser_events") or [])),
+        key=lambda e: e["time"],
+    )
+    idle_ms, blur_start = 0, None
+    for e in events:
+        if e["event"] == "blur":
+            blur_start = e["time"]
+        elif e["event"] == "focus" and blur_start is not None:
+            idle_ms += e["time"] - blur_start
+            blur_start = None
+
+    phase_ms, last_phase, prev_t = {}, None, 0
+    for t in trials:
+        phase = t.get("experiment_phase") or last_phase
+        t_elapsed = t.get("time_elapsed", prev_t)
+        if phase:
+            phase_ms[phase] = phase_ms.get(phase, 0) + (t_elapsed - prev_t)
+        prev_t, last_phase = t_elapsed, phase
+
+    survey_rt = {
+        t["form_name"]: t["rt"]
+        for t in trials
+        if t.get("experiment_phase") == "survey" and t.get("trial_type") == "render-mustache-template"
+    }
+
+    return {"id": row["id"], "total_ms": total_ms, "idle_ms": idle_ms,
+            "phase_ms": phase_ms, "survey_rt_ms": survey_rt}
+
+with open("data/temp/data.csv") as f:
+    for row in csv.DictReader(f):
+        if row.get("worker_id"):
+            print(analyze_participant(row))</pre>
+
+<p>Same two caveats as before still apply, and the mid-task gap section above is a direct illustration of the
+second one: idle detection only catches tab switches, and this batch shows real cases of it missing genuine
+walk-aways that stayed on-tab.</p>
+
+<p><em>Source: data/temp/data.csv &middot; see also participant-timing.html (participants 7–10) and
+participant-timing-20-24.html (participants 20–24).</em></p>
+
+<script>
+const DATA = [{"id":25,"total_sec":506.4,"idle_sec":0.0,"phase_breakdown_sec":{"consent":23.6,"attrition":21.2,"main":129.9,"captcha":6.2,"survey":321.8,"debriefing":3.8},"survey_rt_sec":{"creativePerceptionsForm":35.8,"workHabitsForm":54.9,"kaiSurveyForm":88.6,"big5PersonalityForm":26.3,"threeGoodLifeForm":25.1,"demographicsForm":88.2}},{"id":26,"total_sec":518.0,"idle_sec":5.7,"phase_breakdown_sec":{"consent":25.3,"attrition":15.1,"main":148.0,"captcha":7.1,"survey":318.8,"debriefing":3.7},"survey_rt_sec":{"creativePerceptionsForm":25.4,"workHabitsForm":37.3,"kaiSurveyForm":95.4,"big5PersonalityForm":70.3,"threeGoodLifeForm":16.7,"demographicsForm":72.6}},{"id":27,"total_sec":518.6,"idle_sec":1.6,"phase_breakdown_sec":{"consent":15.2,"attrition":29.8,"main":170.0,"captcha":6.9,"survey":292.6,"debriefing":4.1},"survey_rt_sec":{"creativePerceptionsForm":43.0,"workHabitsForm":31.4,"kaiSurveyForm":88.2,"big5PersonalityForm":16.7,"threeGoodLifeForm":21.8,"demographicsForm":90.1}},{"id":28,"total_sec":564.4,"idle_sec":4.2,"phase_breakdown_sec":{"consent":17.4,"attrition":29.6,"main":165.7,"captcha":4.3,"survey":343.4,"debriefing":4.0},"survey_rt_sec":{"creativePerceptionsForm":46.4,"workHabitsForm":70.7,"kaiSurveyForm":83.0,"big5PersonalityForm":28.0,"threeGoodLifeForm":28.0,"demographicsForm":86.0}},{"id":29,"total_sec":579.4,"idle_sec":0.0,"phase_breakdown_sec":{"consent":14.7,"attrition":42.7,"main":152.1,"captcha":8.6,"survey":357.7,"debriefing":3.7},"survey_rt_sec":{"creativePerceptionsForm":36.4,"workHabitsForm":77.1,"kaiSurveyForm":85.3,"big5PersonalityForm":29.0,"threeGoodLifeForm":25.9,"demographicsForm":102.6}},{"id":30,"total_sec":575.2,"idle_sec":58.1,"phase_breakdown_sec":{"consent":24.6,"attrition":36.1,"main":183.1,"captcha":15.2,"survey":310.4,"debriefing":5.8},"survey_rt_sec":{"creativePerceptionsForm":35.5,"workHabitsForm":25.9,"kaiSurveyForm":77.5,"big5PersonalityForm":31.0,"threeGoodLifeForm":29.8,"demographicsForm":107.9}},{"id":31,"total_sec":601.6,"idle_sec":1.3,"phase_breakdown_sec":{"consent":14.8,"attrition":29.3,"main":174.0,"captcha":7.2,"survey":373.5,"debriefing":3.0},"survey_rt_sec":{"creativePerceptionsForm":39.5,"workHabitsForm":52.0,"kaiSurveyForm":118.6,"big5PersonalityForm":38.7,"threeGoodLifeForm":22.0,"demographicsForm":101.3}},{"id":32,"total_sec":631.8,"idle_sec":276.6,"phase_breakdown_sec":{"consent":113.5,"attrition":16.6,"main":359.3,"captcha":6.2,"survey":132.4,"debriefing":3.8},"survey_rt_sec":{"creativePerceptionsForm":11.8,"workHabitsForm":20.0,"kaiSurveyForm":33.4,"big5PersonalityForm":10.0,"threeGoodLifeForm":11.1,"demographicsForm":45.0}},{"id":33,"total_sec":643.2,"idle_sec":58.9,"phase_breakdown_sec":{"consent":26.6,"attrition":28.7,"main":182.4,"captcha":41.0,"survey":357.9,"debriefing":6.6},"survey_rt_sec":{"creativePerceptionsForm":57.2,"workHabitsForm":48.7,"kaiSurveyForm":95.1,"big5PersonalityForm":62.3,"threeGoodLifeForm":19.9,"demographicsForm":73.6}},{"id":34,"total_sec":659.6,"idle_sec":30.5,"phase_breakdown_sec":{"consent":17.8,"attrition":55.4,"main":180.3,"captcha":9.7,"survey":392.8,"debriefing":3.5},"survey_rt_sec":{"creativePerceptionsForm":54.8,"workHabitsForm":83.4,"kaiSurveyForm":121.8,"big5PersonalityForm":24.4,"threeGoodLifeForm":23.5,"demographicsForm":83.9}},{"id":35,"total_sec":680.3,"idle_sec":3.6,"phase_breakdown_sec":{"consent":23.5,"attrition":41.1,"main":193.0,"captcha":7.9,"survey":410.4,"debriefing":4.5},"survey_rt_sec":{"creativePerceptionsForm":39.5,"workHabitsForm":64.1,"kaiSurveyForm":100.1,"big5PersonalityForm":97.5,"threeGoodLifeForm":24.5,"demographicsForm":83.2}},{"id":36,"total_sec":691.5,"idle_sec":8.3,"phase_breakdown_sec":{"consent":18.4,"attrition":62.1,"main":179.7,"captcha":7.0,"survey":418.3,"debriefing":6.0},"survey_rt_sec":{"creativePerceptionsForm":46.9,"workHabitsForm":82.1,"kaiSurveyForm":95.4,"big5PersonalityForm":25.7,"threeGoodLifeForm":23.8,"demographicsForm":143.2}},{"id":37,"total_sec":694.4,"idle_sec":10.8,"phase_breakdown_sec":{"consent":45.9,"attrition":54.4,"main":197.2,"captcha":10.3,"survey":371.4,"debriefing":15.1},"survey_rt_sec":{"creativePerceptionsForm":50.0,"workHabitsForm":74.7,"kaiSurveyForm":109.0,"big5PersonalityForm":28.8,"threeGoodLifeForm":32.5,"demographicsForm":75.1}},{"id":38,"total_sec":745.2,"idle_sec":384.1,"phase_breakdown_sec":{"consent":5.1,"attrition":18.3,"main":170.3,"captcha":6.8,"survey":520.3,"debriefing":24.5},"survey_rt_sec":{"creativePerceptionsForm":63.3,"workHabitsForm":61.9,"kaiSurveyForm":133.4,"big5PersonalityForm":80.6,"threeGoodLifeForm":83.8,"demographicsForm":96.0}},{"id":39,"total_sec":752.5,"idle_sec":12.8,"phase_breakdown_sec":{"consent":160.1,"attrition":33.6,"main":236.9,"captcha":10.7,"survey":307.4,"debriefing":3.9},"survey_rt_sec":{"creativePerceptionsForm":27.2,"workHabitsForm":80.7,"kaiSurveyForm":78.1,"big5PersonalityForm":18.3,"threeGoodLifeForm":21.7,"demographicsForm":79.5}},{"id":40,"total_sec":761.9,"idle_sec":0.0,"phase_breakdown_sec":{"consent":26.5,"attrition":50.1,"main":267.9,"captcha":10.7,"survey":363.3,"debriefing":43.4},"survey_rt_sec":{"creativePerceptionsForm":41.4,"workHabitsForm":66.6,"kaiSurveyForm":112.0,"big5PersonalityForm":22.8,"threeGoodLifeForm":33.8,"demographicsForm":85.0}},{"id":41,"total_sec":781.3,"idle_sec":149.6,"phase_breakdown_sec":{"consent":164.2,"attrition":32.5,"main":178.9,"captcha":6.0,"survey":393.2,"debriefing":6.5},"survey_rt_sec":{"creativePerceptionsForm":46.4,"workHabitsForm":89.4,"kaiSurveyForm":100.4,"big5PersonalityForm":25.3,"threeGoodLifeForm":23.3,"demographicsForm":107.2}},{"id":42,"total_sec":817.8,"idle_sec":0.0,"phase_breakdown_sec":{"consent":9.7,"attrition":48.9,"main":300.2,"captcha":9.9,"survey":444.7,"debriefing":4.4},"survey_rt_sec":{"creativePerceptionsForm":49.0,"workHabitsForm":109.5,"kaiSurveyForm":114.4,"big5PersonalityForm":32.9,"threeGoodLifeForm":33.0,"demographicsForm":104.6}},{"id":43,"total_sec":818.2,"idle_sec":7.7,"phase_breakdown_sec":{"consent":37.4,"attrition":53.0,"main":228.5,"captcha":9.8,"survey":485.6,"debriefing":3.8},"survey_rt_sec":{"creativePerceptionsForm":92.1,"workHabitsForm":116.5,"kaiSurveyForm":109.6,"big5PersonalityForm":23.0,"threeGoodLifeForm":23.2,"demographicsForm":119.8}},{"id":44,"total_sec":770.4,"idle_sec":0.0,"phase_breakdown_sec":{"consent":14.6,"attrition":32.8,"main":265.6,"captcha":7.3,"survey":446.9,"debriefing":3.3},"survey_rt_sec":{"creativePerceptionsForm":30.1,"workHabitsForm":63.8,"kaiSurveyForm":216.0,"big5PersonalityForm":25.3,"threeGoodLifeForm":19.0,"demographicsForm":91.8}},{"id":45,"total_sec":852.9,"idle_sec":29.5,"phase_breakdown_sec":{"consent":33.1,"attrition":27.4,"main":265.0,"captcha":10.2,"survey":510.6,"debriefing":6.7},"survey_rt_sec":{"creativePerceptionsForm":41.0,"workHabitsForm":101.8,"kaiSurveyForm":107.2,"big5PersonalityForm":52.1,"threeGoodLifeForm":35.8,"demographicsForm":171.1}},{"id":46,"total_sec":825.5,"idle_sec":0.0,"phase_breakdown_sec":{"consent":33.8,"attrition":86.1,"main":267.4,"captcha":33.8,"survey":400.2,"debriefing":4.3},"survey_rt_sec":{"creativePerceptionsForm":33.4,"workHabitsForm":137.2,"kaiSurveyForm":55.4,"big5PersonalityForm":24.0,"threeGoodLifeForm":25.7,"demographicsForm":121.3}},{"id":47,"total_sec":875.6,"idle_sec":4.5,"phase_breakdown_sec":{"consent":25.3,"attrition":47.0,"main":301.8,"captcha":11.0,"survey":484.0,"debriefing":6.4},"survey_rt_sec":{"creativePerceptionsForm":66.1,"workHabitsForm":104.2,"kaiSurveyForm":135.6,"big5PersonalityForm":27.9,"threeGoodLifeForm":43.4,"demographicsForm":105.2}},{"id":48,"total_sec":910.1,"idle_sec":71.3,"phase_breakdown_sec":{"consent":181.4,"attrition":31.7,"main":148.9,"captcha":10.6,"survey":523.6,"debriefing":14.0},"survey_rt_sec":{"creativePerceptionsForm":252.3,"workHabitsForm":61.2,"kaiSurveyForm":79.9,"big5PersonalityForm":19.6,"threeGoodLifeForm":18.1,"demographicsForm":90.7}},{"id":49,"total_sec":904.4,"idle_sec":0.0,"phase_breakdown_sec":{"consent":23.5,"attrition":66.1,"main":266.4,"captcha":18.6,"survey":517.1,"debriefing":12.6},"survey_rt_sec":{"creativePerceptionsForm":51.9,"workHabitsForm":124.7,"kaiSurveyForm":108.4,"big5PersonalityForm":36.4,"threeGoodLifeForm":32.8,"demographicsForm":159.4}},{"id":50,"total_sec":935.2,"idle_sec":0.5,"phase_breakdown_sec":{"consent":80.5,"attrition":77.3,"main":214.9,"captcha":14.5,"survey":544.3,"debriefing":3.7},"survey_rt_sec":{"creativePerceptionsForm":62.0,"workHabitsForm":134.2,"kaiSurveyForm":130.5,"big5PersonalityForm":31.3,"threeGoodLifeForm":32.8,"demographicsForm":152.5}},{"id":51,"total_sec":842.5,"idle_sec":62.4,"phase_breakdown_sec":{"consent":55.3,"attrition":44.6,"main":307.8,"captcha":13.5,"survey":414.9,"debriefing":6.4},"survey_rt_sec":{"creativePerceptionsForm":35.4,"workHabitsForm":132.5,"kaiSurveyForm":91.2,"big5PersonalityForm":17.1,"threeGoodLifeForm":20.9,"demographicsForm":112.6}},{"id":52,"total_sec":959.5,"idle_sec":2.8,"phase_breakdown_sec":{"consent":18.1,"attrition":50.6,"main":302.8,"captcha":22.7,"survey":559.7,"debriefing":5.7},"survey_rt_sec":{"creativePerceptionsForm":62.1,"workHabitsForm":69.8,"kaiSurveyForm":120.5,"big5PersonalityForm":33.9,"threeGoodLifeForm":34.0,"demographicsForm":237.9}},{"id":53,"total_sec":956.0,"idle_sec":31.7,"phase_breakdown_sec":{"consent":76.0,"attrition":38.8,"main":329.0,"captcha":8.4,"survey":497.0,"debriefing":6.7},"survey_rt_sec":{"creativePerceptionsForm":53.6,"workHabitsForm":135.2,"kaiSurveyForm":97.9,"big5PersonalityForm":14.6,"threeGoodLifeForm":23.4,"demographicsForm":169.3}},{"id":54,"total_sec":945.5,"idle_sec":0.0,"phase_breakdown_sec":{"consent":14.1,"attrition":141.8,"main":271.9,"captcha":42.6,"survey":469.3,"debriefing":5.7},"survey_rt_sec":{"creativePerceptionsForm":34.4,"workHabitsForm":87.8,"kaiSurveyForm":87.0,"big5PersonalityForm":18.2,"threeGoodLifeForm":22.3,"demographicsForm":216.6}},{"id":55,"total_sec":964.0,"idle_sec":6.9,"phase_breakdown_sec":{"consent":37.4,"attrition":108.5,"main":321.7,"captcha":30.7,"survey":458.7,"debriefing":7.0},"survey_rt_sec":{"creativePerceptionsForm":34.6,"workHabitsForm":116.2,"kaiSurveyForm":99.1,"big5PersonalityForm":23.1,"threeGoodLifeForm":28.6,"demographicsForm":150.2}},{"id":56,"total_sec":999.5,"idle_sec":18.6,"phase_breakdown_sec":{"consent":53.0,"attrition":82.9,"main":214.9,"captcha":20.1,"survey":617.9,"debriefing":10.7},"survey_rt_sec":{"creativePerceptionsForm":79.6,"workHabitsForm":97.6,"kaiSurveyForm":179.3,"big5PersonalityForm":50.7,"threeGoodLifeForm":43.3,"demographicsForm":166.2}},{"id":57,"total_sec":1021.8,"idle_sec":50.8,"phase_breakdown_sec":{"consent":113.1,"attrition":47.2,"main":225.9,"captcha":19.7,"survey":606.3,"debriefing":9.6},"survey_rt_sec":{"creativePerceptionsForm":73.2,"workHabitsForm":230.6,"kaiSurveyForm":110.5,"big5PersonalityForm":24.4,"threeGoodLifeForm":38.1,"demographicsForm":128.3}},{"id":58,"total_sec":1106.9,"idle_sec":0.3,"phase_breakdown_sec":{"consent":59.9,"attrition":56.2,"main":445.6,"captcha":16.4,"survey":518.5,"debriefing":10.3},"survey_rt_sec":{"creativePerceptionsForm":56.7,"workHabitsForm":72.6,"kaiSurveyForm":134.9,"big5PersonalityForm":47.5,"threeGoodLifeForm":50.1,"demographicsForm":155.3}},{"id":59,"total_sec":1140.0,"idle_sec":5.1,"phase_breakdown_sec":{"consent":18.9,"attrition":130.5,"main":301.4,"captcha":87.3,"survey":591.6,"debriefing":10.3},"survey_rt_sec":{"creativePerceptionsForm":16.4,"workHabitsForm":162.3,"kaiSurveyForm":61.0,"big5PersonalityForm":15.7,"threeGoodLifeForm":21.8,"demographicsForm":313.1}},{"id":60,"total_sec":1179.2,"idle_sec":22.2,"phase_breakdown_sec":{"consent":141.8,"attrition":77.2,"main":373.9,"captcha":12.9,"survey":566.2,"debriefing":7.1},"survey_rt_sec":{"creativePerceptionsForm":41.1,"workHabitsForm":116.3,"kaiSurveyForm":161.9,"big5PersonalityForm":96.9,"threeGoodLifeForm":22.3,"demographicsForm":125.1}},{"id":61,"total_sec":1187.6,"idle_sec":15.3,"phase_breakdown_sec":{"consent":103.7,"attrition":42.8,"main":376.5,"captcha":12.4,"survey":638.4,"debriefing":13.9},"survey_rt_sec":{"creativePerceptionsForm":60.9,"workHabitsForm":101.5,"kaiSurveyForm":276.5,"big5PersonalityForm":20.6,"threeGoodLifeForm":22.8,"demographicsForm":155.2}},{"id":62,"total_sec":1220.0,"idle_sec":0.4,"phase_breakdown_sec":{"consent":15.0,"attrition":29.8,"main":625.2,"captcha":8.9,"survey":537.7,"debriefing":3.4},"survey_rt_sec":{"creativePerceptionsForm":33.8,"workHabitsForm":44.9,"kaiSurveyForm":304.8,"big5PersonalityForm":30.3,"threeGoodLifeForm":21.9,"demographicsForm":100.3}},{"id":63,"total_sec":1300.8,"idle_sec":0.3,"phase_breakdown_sec":{"consent":86.2,"attrition":75.6,"main":292.7,"captcha":23.6,"survey":816.7,"debriefing":6.1},"survey_rt_sec":{"creativePerceptionsForm":102.1,"workHabitsForm":310.1,"kaiSurveyForm":157.9,"big5PersonalityForm":24.6,"threeGoodLifeForm":31.6,"demographicsForm":186.9}},{"id":64,"total_sec":1205.9,"idle_sec":19.8,"phase_breakdown_sec":{"consent":47.1,"attrition":39.2,"main":479.8,"captcha":17.9,"survey":614.0,"debriefing":7.9},"survey_rt_sec":{"creativePerceptionsForm":74.0,"workHabitsForm":58.3,"kaiSurveyForm":127.1,"big5PersonalityForm":53.7,"threeGoodLifeForm":136.6,"demographicsForm":162.9}},{"id":65,"total_sec":1301.0,"idle_sec":0.0,"phase_breakdown_sec":{"consent":59.0,"attrition":65.8,"main":503.4,"captcha":50.6,"survey":613.9,"debriefing":8.4},"survey_rt_sec":{"creativePerceptionsForm":17.2,"workHabitsForm":38.5,"kaiSurveyForm":39.5,"big5PersonalityForm":13.8,"threeGoodLifeForm":13.6,"demographicsForm":490.0}},{"id":66,"total_sec":1347.2,"idle_sec":16.4,"phase_breakdown_sec":{"consent":141.5,"attrition":45.8,"main":910.9,"captcha":59.1,"survey":182.1,"debriefing":7.9},"survey_rt_sec":{"creativePerceptionsForm":15.5,"workHabitsForm":40.3,"kaiSurveyForm":30.7,"big5PersonalityForm":10.6,"threeGoodLifeForm":17.7,"demographicsForm":62.5}},{"id":67,"total_sec":1462.7,"idle_sec":633.9,"phase_breakdown_sec":{"consent":39.7,"attrition":156.3,"main":631.5,"captcha":8.1,"survey":624.2,"debriefing":2.8},"survey_rt_sec":{"creativePerceptionsForm":94.2,"workHabitsForm":79.6,"kaiSurveyForm":282.2,"big5PersonalityForm":27.5,"threeGoodLifeForm":41.9,"demographicsForm":98.1}},{"id":68,"total_sec":1479.6,"idle_sec":4.4,"phase_breakdown_sec":{"consent":27.3,"attrition":37.0,"main":524.8,"captcha":6.8,"survey":869.9,"debriefing":13.9},"survey_rt_sec":{"creativePerceptionsForm":58.6,"workHabitsForm":456.3,"kaiSurveyForm":180.3,"big5PersonalityForm":37.5,"threeGoodLifeForm":38.3,"demographicsForm":97.7}},{"id":69,"total_sec":1454.9,"idle_sec":15.5,"phase_breakdown_sec":{"consent":205.4,"attrition":81.9,"main":348.1,"captcha":22.9,"survey":783.2,"debriefing":13.3},"survey_rt_sec":{"creativePerceptionsForm":102.6,"workHabitsForm":161.3,"kaiSurveyForm":214.1,"big5PersonalityForm":35.1,"threeGoodLifeForm":62.3,"demographicsForm":200.6}},{"id":70,"total_sec":1524.6,"idle_sec":766.7,"phase_breakdown_sec":{"consent":773.0,"attrition":78.6,"main":188.4,"captcha":18.0,"survey":463.0,"debriefing":3.6},"survey_rt_sec":{"creativePerceptionsForm":39.4,"workHabitsForm":94.2,"kaiSurveyForm":112.0,"big5PersonalityForm":30.5,"threeGoodLifeForm":40.7,"demographicsForm":144.7}},{"id":71,"total_sec":1525.5,"idle_sec":48.1,"phase_breakdown_sec":{"consent":1036.2,"attrition":22.4,"main":171.1,"captcha":8.1,"survey":283.8,"debriefing":3.8},"survey_rt_sec":{"creativePerceptionsForm":28.2,"workHabitsForm":31.4,"kaiSurveyForm":91.0,"big5PersonalityForm":26.6,"threeGoodLifeForm":35.5,"demographicsForm":67.5}},{"id":72,"total_sec":450.5,"idle_sec":0.0,"phase_breakdown_sec":{"consent":40.1,"attrition":19.7,"main":166.9,"captcha":4.4,"survey":215.8,"debriefing":3.6},"survey_rt_sec":{"creativePerceptionsForm":22.3,"workHabitsForm":30.2,"kaiSurveyForm":69.9,"big5PersonalityForm":20.2,"threeGoodLifeForm":23.2,"demographicsForm":48.6}},{"id":73,"total_sec":1330.8,"idle_sec":22.6,"phase_breakdown_sec":{"consent":27.5,"attrition":55.1,"main":344.0,"captcha":13.5,"survey":884.5,"debriefing":6.1},"survey_rt_sec":{"creativePerceptionsForm":86.2,"workHabitsForm":384.7,"kaiSurveyForm":135.7,"big5PersonalityForm":24.3,"threeGoodLifeForm":39.4,"demographicsForm":210.9}},{"id":74,"total_sec":1216.3,"idle_sec":13.1,"phase_breakdown_sec":{"consent":56.5,"attrition":106.2,"main":433.4,"captcha":15.1,"survey":598.9,"debriefing":6.2},"survey_rt_sec":{"creativePerceptionsForm":60.4,"workHabitsForm":98.1,"kaiSurveyForm":168.4,"big5PersonalityForm":48.4,"threeGoodLifeForm":41.6,"demographicsForm":179.3}}]
+;
+
+// ---- stacked timing chart ----
+(function(){
+  const phases = [["consent","--s-consent"], ["attrition","--s-attrition"], ["main","--s-main"],
+    ["captcha","--s-captcha"], ["survey","--s-survey"], ["debriefing","--s-debrief"]];
+  const maxTotal = Math.max(...DATA.map(d => d.total_sec));
+  const chart = document.getElementById('chart');
+  DATA.forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'chart-row';
+    const label = document.createElement('div');
+    label.className = 'chart-label';
+    label.textContent = 'P' + d.id;
+    const track = document.createElement('div');
+    track.className = 'bar-track';
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.width = (d.total_sec / maxTotal * 100) + '%';
+    phases.forEach(([name, varname]) => {
+      const sec = d.phase_breakdown_sec[name];
+      if (!sec) return;
+      const seg = document.createElement('div');
+      seg.className = 'seg';
+      seg.style.width = (sec / d.total_sec * 100) + '%';
+      seg.style.background = 'var(' + varname + ')';
+      const mins = (sec/60).toFixed(1);
+      seg.setAttribute('data-tip', name + ': ' + sec.toFixed(0) + 's (' + mins + ' min)');
+      bar.appendChild(seg);
+    });
+    track.appendChild(bar);
+    const total = document.createElement('div');
+    total.className = 'chart-total';
+    total.textContent = (d.total_sec/60).toFixed(1) + 'm';
+    const idle = document.createElement('div');
+    idle.className = 'idle-mark';
+    idle.textContent = d.idle_sec >= 10 ? (d.idle_sec.toFixed(0) + 's') : '';
+    row.appendChild(label);
+    row.appendChild(track);
+    row.appendChild(total);
+    row.appendChild(idle);
+    chart.appendChild(row);
+  });
+})();
+
+// ---- per-survey heatmap table ----
+(function(){
+  const surveys = ["creativePerceptionsForm","workHabitsForm","kaiSurveyForm","big5PersonalityForm","threeGoodLifeForm","demographicsForm"];
+  const surveyLabels = {
+    creativePerceptionsForm: "Creative Perceptions", workHabitsForm: "Work Habits", kaiSurveyForm: "KAI",
+    big5PersonalityForm: "Big Five", threeGoodLifeForm: "Three Good Lives", demographicsForm: "Demographics"
+  };
+  const ramp = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95"];
+
+  function colorFor(val, min, max) {
+    if (val === null || val === undefined) return null;
+    const frac = max > min ? (val - min) / (max - min) : 0;
+    const idx = Math.min(ramp.length - 1, Math.floor(frac * ramp.length));
+    return ramp[idx];
+  }
+  function textColorFor(hex) {
+    return (hex === "#256abf" || hex === "#184f95") ? "#fff" : "#0b0b0b";
+  }
+
+  const colStats = {};
+  surveys.forEach(s => {
+    const vals = DATA.map(d => d.survey_rt_sec[s]).filter(v => v !== null && v !== undefined);
+    colStats[s] = { min: Math.min(...vals), max: Math.max(...vals) };
+  });
+
+  let html = "<table><tr><th>Participant</th>";
+  surveys.forEach(s => html += `<th>${surveyLabels[s]}</th>`);
+  html += "<th>Total survey time</th></tr>";
+
+  DATA.forEach(d => {
+    html += `<tr><td>P${d.id}</td>`;
+    let total = 0;
+    surveys.forEach(s => {
+      const v = d.survey_rt_sec[s];
+      if (v === null || v === undefined) {
+        html += `<td>&mdash;</td>`;
+      } else {
+        total += v;
+        const bg = colorFor(v, colStats[s].min, colStats[s].max);
+        const fg = textColorFor(bg);
+        html += `<td><span class="cell num" style="background:${bg};color:${fg}">${v.toFixed(0)}s</span></td>`;
+      }
+    });
+    html += `<td class="num total">${total.toFixed(0)}s (${(total/60).toFixed(1)} min)</td></tr>`;
+  });
+  html += "</table>";
+  document.getElementById("table-container").innerHTML = html;
+})();
+</script>

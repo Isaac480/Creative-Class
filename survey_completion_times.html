@@ -1,0 +1,151 @@
+<meta charset="UTF-8">
+<title>Survey completion times — participants 7-10, 20-24</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 880px; margin: 40px auto; padding: 0 20px; line-height: 1.55; color: #1a1a1a; }
+  @media (prefers-color-scheme: dark) { body { color: #e6e6e6; } }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .meta { color: #777; font-size: 0.85rem; margin-bottom: 24px; }
+  h2 { font-size: 1.05rem; margin-top: 32px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  @media (prefers-color-scheme: dark) { h2 { border-color: #444; } }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 0.9rem; }
+  th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid #eee; }
+  @media (prefers-color-scheme: dark) { th, td { border-color: #333; } }
+  th { color: #666; font-weight: 600; text-align: center; }
+  @media (prefers-color-scheme: dark) { th { color: #999; } }
+  td:first-child, th:first-child { text-align: left; }
+  .num { font-variant-numeric: tabular-nums; }
+  .cell { border-radius: 4px; padding: 5px 8px; }
+  .total { font-weight: 600; }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88em; }
+  @media (prefers-color-scheme: dark) { code { background: #333; } }
+  .note { background: #f6f6f6; border-left: 3px solid #999; padding: 10px 14px; margin: 14px 0; font-size: 0.92rem; }
+  @media (prefers-color-scheme: dark) { .note { background: #262626; border-color: #666; } }
+  .legend { font-size: 0.82rem; color: #777; margin-top: 6px; }
+  .swatch-row { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+  .swatch { width: 22px; height: 12px; border-radius: 2px; }
+</style>
+
+<h1>How long did each participant spend on each survey?</h1>
+<div class="meta">data/temp/data.csv &middot; participants 7, 8, 9, 10, 20, 21, 22, 23, 24 &middot; per-survey <code>rt</code> on each survey's single form-submit trial</div>
+
+<p>Each survey (Creative Perceptions, Work Habits, KAI, Big Five, Three Good
+Lives, Demographics) is one page/one trial, so its <code>rt</code> is exactly
+the time spent on that page. Participants 7-10 didn't have the Three Good
+Lives survey yet (added later) — shown as blank. Cells are shaded relative to
+that survey's own column (darker = slower), so you can see which participants
+were slow on which specific survey rather than just overall.</p>
+
+<h2 id="table">Per-survey time (seconds)</h2>
+<div id="table-container"></div>
+<div class="legend">
+  Shading legend (relative to each column's own min-max):
+  <div class="swatch-row">
+    <span>fast</span>
+    <span class="swatch" style="background:#cde2fb"></span>
+    <span class="swatch" style="background:#86b6ef"></span>
+    <span class="swatch" style="background:#3987e5"></span>
+    <span class="swatch" style="background:#184f95"></span>
+    <span>slow</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  const surveys = ["CreativePerceptions", "WorkHabits", "KAI", "Big5", "ThreeGoodLife", "demographics"];
+  const surveyLabels = {
+    CreativePerceptions: "Creative Perceptions",
+    WorkHabits: "Work Habits",
+    KAI: "KAI",
+    Big5: "Big Five",
+    ThreeGoodLife: "Three Good Lives",
+    demographics: "Demographics"
+  };
+  const data = {
+    7:  {CreativePerceptions:120.6, WorkHabits:200.1, KAI:210.0, Big5:55.3,  ThreeGoodLife:null, demographics:176.2},
+    8:  {CreativePerceptions:49.8,  WorkHabits:73.6,  KAI:131.0, Big5:69.6,  ThreeGoodLife:null, demographics:115.0},
+    9:  {CreativePerceptions:42.4,  WorkHabits:68.1,  KAI:208.1, Big5:58.8,  ThreeGoodLife:null, demographics:781.3},
+    10: {CreativePerceptions:61.4,  WorkHabits:183.7, KAI:109.6, Big5:41.7,  ThreeGoodLife:null, demographics:180.3},
+    20: {CreativePerceptions:150.5, WorkHabits:122.7, KAI:126.8, Big5:24.4,  ThreeGoodLife:40.5, demographics:105.4},
+    21: {CreativePerceptions:48.7,  WorkHabits:90.6,  KAI:115.3, Big5:28.1,  ThreeGoodLife:27.8, demographics:185.6},
+    22: {CreativePerceptions:73.0,  WorkHabits:146.4, KAI:194.2, Big5:33.7,  ThreeGoodLife:58.9, demographics:201.1},
+    23: {CreativePerceptions:118.2, WorkHabits:364.3, KAI:238.2, Big5:67.0,  ThreeGoodLife:47.3, demographics:214.6},
+    24: {CreativePerceptions:148.4, WorkHabits:218.4, KAI:217.6, Big5:46.5,  ThreeGoodLife:34.5, demographics:133.6}
+  };
+  const ramp = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95"];
+
+  function colorFor(val, min, max) {
+    if (val === null || val === undefined) return null;
+    const frac = max > min ? (val - min) / (max - min) : 0;
+    const idx = Math.min(ramp.length - 1, Math.floor(frac * ramp.length));
+    return ramp[idx];
+  }
+  function textColorFor(hex) {
+    // ramp steps 4,5 (darker blues) need white text
+    return (hex === "#256abf" || hex === "#184f95") ? "#fff" : "#0b0b0b";
+  }
+
+  const colStats = {};
+  surveys.forEach(s => {
+    const vals = Object.values(data).map(d => d[s]).filter(v => v !== null && v !== undefined);
+    colStats[s] = { min: Math.min(...vals), max: Math.max(...vals) };
+  });
+
+  let html = "<table><tr><th>Participant</th>";
+  surveys.forEach(s => html += `<th>${surveyLabels[s]}</th>`);
+  html += "<th>Total survey time</th></tr>";
+
+  Object.keys(data).forEach(pid => {
+    const row = data[pid];
+    html += `<tr><td>P${pid}</td>`;
+    let total = 0;
+    surveys.forEach(s => {
+      const v = row[s];
+      if (v === null || v === undefined) {
+        html += `<td>&mdash;</td>`;
+      } else {
+        total += v;
+        const bg = colorFor(v, colStats[s].min, colStats[s].max);
+        const fg = textColorFor(bg);
+        html += `<td><span class="cell num" style="background:${bg};color:${fg}">${v.toFixed(0)}s</span></td>`;
+      }
+    });
+    html += `<td class="num total">${total.toFixed(0)}s (${(total/60).toFixed(1)} min)</td></tr>`;
+  });
+  html += "</table>";
+  document.getElementById("table-container").innerHTML = html;
+})();
+</script>
+
+<h2 id="notes">What stands out</h2>
+
+<div class="note">
+<strong>Participant 9's demographics page (781s / 13.0 min)</strong> is the
+same gap already flagged in the earlier timing report as likely idle time
+rather than genuine reading/typing time &mdash; no other participant spent
+more than 215s on demographics, and there's no blur/focus event around it
+(consistent with "tab stayed in focus, participant stepped away" rather than
+switching windows).
+</div>
+
+<div class="note">
+<strong>Participant 23's Work Habits page (364s / 6.1 min)</strong> is the
+single longest non-demographics survey time in the whole set &mdash; over 90s
+more than the next slowest (participant 7, 200s). Work Habits also includes an
+open-ended job-description field, so this could be genuine (a longer
+description) rather than idle; worth a quick look at their actual
+<code>jobDescription</code> text if you want to check.
+</div>
+
+<div class="note">
+<strong>KAI is consistently the slowest "quick" survey</strong> across nearly
+everyone (110-238s), which tracks with it being the longest instrument here
+(33 items) &mdash; Big Five (10 items) and Three Good Lives (15 items, but
+simple click-to-select) are the fastest for every participant.
+</div>
+
+<p><em>Source: data/temp/data.csv &middot; per-survey <code>rt</code> extracted
+from each participant's <code>render-mustache-template</code> trials with
+<code>experiment_phase == "survey"</code>, matched across the old
+(<code>survey3Form</code> etc.) and new (<code>kaiSurveyForm</code> etc.) form
+names.</em></p>

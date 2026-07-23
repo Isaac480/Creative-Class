@@ -1,16 +1,43 @@
 ---
-title: "Face Judgement & Survey Data Analysis"
+title: "Face Judgement & Survey Data Analysis — Pre-Registered Pipeline"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(broom.mixed)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Step 1: Merge survey data with face judgement data
+## Before knitting
 
-Read in the two exported CSVs.
+Re-export the latest data from the database (the CSVs below are gitignored, so
+this must be run locally first):
+
+```
+python3 -c "from export_participant_data import export_clean_data; export_clean_data()"
+```
+
+## Overview
+
+This pipeline implements the analysis plan in `Isaac pre-registration draft.txt`,
+run on the **9 pilot participants collected so far** (ids 7-10 and 20-24) out of
+the planned 600. All 9 happen to be in the `professional` advice condition — no
+`emotional` or `intelligence`-condition data exists yet. That means:
+
+- The **primary confirmatory test** (fit within the professional condition) can
+  be run on the full pilot sample.
+- The **domain-specificity test** (`Condition × FaceAge × CreativePerceptions`)
+  and the **mechanism-probe model** (fit within the intelligence condition)
+  can't be fit yet — there's no other-condition data to contrast against. Their
+  formulas are documented below, ready to run once those conditions have data.
+- With n=9 (vs. the planned n=600), expect convergence warnings, singular fits,
+  and wide/unstable estimates throughout. **Nothing here is a meaningful test of
+  H1/H2 yet** — this is a pipeline correctness check on pilot data, not a result.
+
+## Step 1: Merge survey data with face judgement data
 
 ```{r read-data}
 survey_data <- read_csv("/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/survey_data.csv", show_col_types = FALSE)
@@ -67,10 +94,12 @@ The survey instruments were renamed partway through data collection (commit
 `bc3bed8`): `survey3`->`kaiSurvey`, `survey4`->`big5Personality`,
 `survey5`->`creativePerceptions`, `survey6`->`workHabits`, and the original
 `survey_*` demographics fields -> `demographics_*`. Question numbering/order
-was unchanged, only the prefix. Participants who took part before the rename
-have their answers under the old prefix; participants after have them under
-the new prefix, so each participant has only one of the two populated. Coalesce
-each old/new pair into the new (current) column name and drop the old one.
+was unchanged, only the prefix. Participants 7-10 (before the rename) have
+their answers under the old prefix; participants 20-24 (after) have them under
+the new prefix — coalesce each old/new pair into the new (current) column name
+and drop the old one. (Fields added *after* the rename — Three Good Lives, and
+the political/education/SES demographics items — simply don't exist for
+participants 7-10; they'll be `NA` for those 4 participants throughout.)
 
 ```{r reconcile-renamed-columns}
 demo_suffixes <- c("age", "comments", "estimatedPerformance", "gender",
@@ -98,29 +127,29 @@ merged_data <- merged_data %>% select(-all_of(names(old_to_new)))
 write_csv(merged_data, "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/merged_survey_face_data.csv")
 ```
 
-## Step 2: Filter to participants 7, 8, 9, 10
+## Step 2: Filter to the 9 pilot participants (7, 8, 9, 10, 20, 21, 22, 23, 24)
 
 ```{r filter}
-filtered_data <- merged_data %>%
-  filter(participant_id %in% c(7, 8, 9, 10))
+pilot_ids <- c(7, 8, 9, 10, 20, 21, 22, 23, 24)
 
-filtered_data %>% select(participant_id)
+filtered_data <- merged_data %>%
+  filter(participant_id %in% pilot_ids)
+
+filtered_data %>% select(participant_id, condition)
 ```
 
-## Step 3: (skipped — data kept anonymized)
-
-Participant data is kept anonymized; no name mapping is applied, only
-`participant_id` is used throughout.
+Data is kept anonymized; only `participant_id` is used throughout, no name
+mapping is applied.
 
 ```{r write-filtered}
-write_csv(filtered_data, "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/filtered_data_p7_10.csv")
+write_csv(filtered_data, "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/filtered_data_9participants.csv")
 ```
 
-## Step 4: First quartile, median, and third quartile rated face per participant
+## Step 3: Within-participant test-retest reliability
 
-For each participant, rank their 60 unique face judgements (the `face_<num>`
-columns, excluding `_repeat` columns) from lowest to highest rating, then take
-the 15th-, 30th-, and 45th-ranked face/rating as Q1, median, and Q3.
+Pre-registered exclusion criterion #1. For each participant, pair up their
+first and repeat rating on each of the 10 repeated faces, then compute one
+Pearson correlation per participant across those 10 pairs.
 
 ```{r face-long}
 face_long <- filtered_data %>%
@@ -132,60 +161,6 @@ face_long <- filtered_data %>%
   ) %>%
   mutate(face_num = str_remove(face_num, "^face_"))
 ```
-
-```{r quartile-faces}
-quartile_faces <- face_long %>%
-  group_by(participant_id) %>%
-  arrange(rating, .by_group = TRUE) %>%
-  mutate(rank = row_number()) %>%
-  filter(rank %in% c(15, 30, 45)) %>%
-  mutate(quartile = case_when(
-    rank == 15 ~ "Q1",
-    rank == 30 ~ "median",
-    rank == 45 ~ "Q3"
-  )) %>%
-  ungroup() %>%
-  select(participant_id, quartile, rank, face_num, rating)
-
-quartile_faces
-```
-
-## Step 5: Join the quartile faces with their Peterson face age data
-
-`PetersonFaceData.csv` lists each face stimulus once (plus a duplicate "(Repeat)"
-row for the 10 repeat faces, which carries no extra information) along with its
-`Mean Age`. Deduplicate on stimulus, then join the Q1/median/Q3 faces from Step 4
-onto their corresponding age.
-
-```{r read-peterson}
-peterson_data <- read_csv(
-  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/PetersonFaceData.csv",
-  show_col_types = FALSE
-) %>%
-  mutate(Stimulus = as.character(Stimulus)) %>%
-  distinct(Stimulus, `Mean Age`) %>%
-  rename(face_num = Stimulus, age = `Mean Age`)
-```
-
-```{r join-quartile-age}
-quartile_faces_with_age <- quartile_faces %>%
-  left_join(peterson_data, by = "face_num")
-
-quartile_faces_with_age
-```
-
-```{r write-quartile-age}
-write_csv(
-  quartile_faces_with_age,
-  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/quartile_faces_with_age.csv"
-)
-```
-
-## Step 6: Within-participant test-retest reliability
-
-For each participant, pair up their first and repeat rating on each of the 10
-repeated faces, then compute one Pearson correlation per participant across
-those 10 pairs.
 
 ```{r repeat-pairs}
 repeat_face_nums <- c(1, 2, 4, 5, 6, 7, 9, 15, 24, 79)
@@ -204,8 +179,6 @@ repeat_pairs <- filtered_data %>%
   ) %>%
   mutate(rep = if_else(rep == "_repeat", "rating2", "rating1")) %>%
   pivot_wider(names_from = rep, values_from = rating)
-
-repeat_pairs
 ```
 
 ```{r reliability}
@@ -227,23 +200,191 @@ write_csv(
 )
 ```
 
-## Step 7: Reverse-scored items
+## Step 4: Visualizing agreement across participants
 
-The following items are reverse-worded and need to be reverse-scored before
-averaging:
+Every participant rates all 70 face presentations (60 unique faces + 10 shown
+twice), so plotting all 70 ratings per participant on the same face axis shows
+directly how much participants agree with each other on any given face — tight
+vertical clusters mean strong agreement, wide spread means participants see
+that face very differently. Faces are sorted by their mean rating (low to
+high) and each participant gets one consistent color across the whole plot; a
+black tick marks the per-face mean.
 
-- Work Characteristics (`workHabits`): Q3, Q9, Q12
-- Societal Change Perceptions / creative perceptions (`creativePerceptions`): Q6, Q11
+```{r agreement-plot-data}
+agreement_data <- face_trials %>%
+  filter(participant_id %in% pilot_ids) %>%
+  select(participant_id, face_num, rating)
 
-KAI (`kaiSurvey`) has no reverse-scored items.
+face_order <- agreement_data %>%
+  group_by(face_num) %>%
+  summarise(mean_rating = mean(rating, na.rm = TRUE), .groups = "drop") %>%
+  arrange(mean_rating) %>%
+  pull(face_num)
 
-## Step 8: Average score per survey
+agreement_data <- agreement_data %>%
+  mutate(
+    face_num = factor(face_num, levels = face_order),
+    participant_id = factor(participant_id)
+  )
 
-Each survey uses a fixed-option button scale, so first recode the text labels
-to numbers: KAI is a 4-point scale (Very Hard=1 ... Very Easy=4), and both
-creative perceptions and work habits use a 5-point agree/disagree scale
-(Strongly Disagree=1 ... Strongly Agree=5). Reverse-scored items are flipped
-(`6 - x`, since min+max = 6 on the 5-point scale) before averaging.
+face_means <- agreement_data %>%
+  group_by(face_num) %>%
+  summarise(mean_rating = mean(rating, na.rm = TRUE), .groups = "drop")
+```
+
+```{r agreement-plot, fig.width=8, fig.height=13}
+agreement_plot <- ggplot(agreement_data, aes(x = rating, y = face_num, color = participant_id)) +
+  geom_jitter(height = 0.15, width = 0, size = 2, alpha = 0.85) +
+  geom_point(
+    data = face_means, aes(x = mean_rating, y = face_num),
+    inherit.aes = FALSE, shape = "|", size = 5, color = "black"
+  ) +
+  labs(
+    x = "Rating (0-100 slider)",
+    y = "Face (sorted by mean rating, low -> high)",
+    color = "Participant",
+    title = "Face ratings by participant (9 participants x 70 presentations)",
+    subtitle = "Black tick = mean rating for that face"
+  ) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 6))
+
+agreement_plot
+```
+
+```{r write-agreement-plot}
+ggsave(
+  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/face_ratings_by_participant.png",
+  agreement_plot, width = 8, height = 13, dpi = 150
+)
+```
+
+## Step 5: Straight-lining check
+
+Pre-registered exclusion criterion #5: identical ratings on more than 90% of
+trials. Computed over each participant's 60 first-presentation trials (the
+modal rating's share of those 60).
+
+```{r straightlining}
+straightlining <- face_long %>%
+  group_by(participant_id, rating) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(participant_id) %>%
+  summarise(
+    modal_rating_share = max(n) / sum(n),
+    .groups = "drop"
+  )
+
+straightlining
+```
+
+## Step 6: Exclusion criteria
+
+Applying all 5 pre-registered exclusion criteria, blind to condition (all 9
+happen to be `professional` here, so this is moot for this batch but kept
+general):
+
+1. Test-retest reliability r <= 0 (chance-level or inverted consistency).
+   A stricter sensitivity cutoff of r < .30 is also flagged separately, per the
+   pre-registration's sensitivity analysis.
+2. Failure of the attention/bot check. **Not computable from stored data** —
+   both the attrition free-text check and the captcha word-match are validated
+   client-side (`frontend/src/js/utils.js`, `attritionAnswer`/`captchaAnswer`
+   rules) and block form submission until answered correctly. Every participant
+   in the database already passed by construction, so this always evaluates to
+   FALSE here rather than being a meaningful check on this data. (Participants
+   7-10 additionally predate the captcha page — only the attrition check
+   existed for them.)
+3. Self-reported prior completion of the study (`participatedBefore == "Yes"`).
+4. Self-reported attentiveness/distractedness. The demographics form only has
+   one relevant item, `seriousness` (1 = very distracted, 100 = very focused) —
+   there's no separate distractedness question, so the two pre-registered
+   criteria collapse to one check: `seriousness < 50`.
+5. Straight-lining: modal rating share > 90% of the 60 first-presentation trials.
+
+```{r exclusions}
+exclusions <- filtered_data %>%
+  select(participant_id, participatedBefore = demographics_participatedBefore,
+         seriousness = demographics_seriousness) %>%
+  left_join(reliability %>% select(participant_id, pearson_r), by = "participant_id") %>%
+  left_join(straightlining, by = "participant_id") %>%
+  mutate(
+    reliability_leq_0 = pearson_r <= 0,
+    reliability_sensitivity_lt_030 = pearson_r < 0.30,
+    participated_before = participatedBefore == "Yes",
+    low_seriousness = seriousness < 50,
+    straightlining = modal_rating_share > 0.90,
+    bot_or_attention_check_fail = FALSE,  # not computable — see note above
+    excluded = reliability_leq_0 | participated_before | low_seriousness |
+      straightlining | bot_or_attention_check_fail
+  )
+
+exclusions %>%
+  select(participant_id, pearson_r, reliability_leq_0, reliability_sensitivity_lt_030,
+         participated_before, low_seriousness, straightlining,
+         bot_or_attention_check_fail, excluded)
+```
+
+```{r write-exclusions}
+write_csv(exclusions, "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/exclusions.csv")
+```
+
+```{r apply-exclusions}
+n_excluded <- sum(exclusions$excluded)
+cat(n_excluded, "of", nrow(exclusions), "participants excluded.\n")
+
+analysis_sample <- filtered_data %>%
+  filter(participant_id %in% (exclusions %>% filter(!excluded) %>% pull(participant_id)))
+```
+
+## Step 7: Big Five (TIPI) scoring
+
+`big5Personality_Q1`-`Q10` is the standard 10-item TIPI (confirmed against
+`frontend/src/html/big5-personality.html`), 7-point scale (1 = Completely
+Disagree ... 7 = Completely Agree), standard item order. Reverse items are the
+even-numbered ones; reverse formula is `8 - x` (min + max = 8 on a 1-7 scale).
+Each trait score is the mean of its 2 items after reversing the reverse one.
+
+```{r big5-scoring}
+# Stored as text labels with the numeric value trailing in parens, e.g.
+# "Somewhat Agree (5)" -- extract the number rather than assuming it's numeric.
+extract_paren_num <- function(x) as.numeric(str_extract(x, "(?<=\\()\\d+(?=\\)$)"))
+
+b5 <- analysis_sample %>%
+  select(participant_id, matches("^big5Personality_Q\\d+$")) %>%
+  mutate(across(matches("^big5Personality_Q\\d+$"), extract_paren_num))
+
+b5_scored <- b5 %>%
+  mutate(
+    Extraversion       = rowMeans(cbind(big5Personality_Q1, 8 - big5Personality_Q6), na.rm = TRUE),
+    Agreeableness      = rowMeans(cbind(8 - big5Personality_Q2, big5Personality_Q7), na.rm = TRUE),
+    Conscientiousness  = rowMeans(cbind(big5Personality_Q3, 8 - big5Personality_Q8), na.rm = TRUE),
+    EmotionalStability = rowMeans(cbind(8 - big5Personality_Q4, big5Personality_Q9), na.rm = TRUE),
+    Openness           = rowMeans(cbind(big5Personality_Q5, 8 - big5Personality_Q10), na.rm = TRUE)
+  ) %>%
+  select(participant_id, Extraversion, Agreeableness, Conscientiousness,
+         EmotionalStability, Openness)
+
+b5_scored
+```
+
+## Step 8: Likert recoding and reverse-scoring for the other surveys
+
+KAI uses a 4-point scale (Very Hard=1 ... Very Easy=4); Creative Perceptions
+and Work Habits use a 5-point agree/disagree scale (Strongly Disagree=1 ...
+Strongly Agree=5).
+
+**Work Habits reverse item — corrected**: checking the actual item wording in
+`frontend/src/html/work-habits.html`, Q3 ("solving problems that have no
+obvious correct answer"), Q9 ("independence and freedom"), and Q12 ("unique
+ideas or solutions") are all positively-worded — reverse-scoring them (as an
+earlier version of this pipeline did) was a mistake. The one genuinely
+reverse-worded item is Q6, "the tasks on the job are simple and uncomplicated"
+— which also matches the reverse item in the Work Design Questionnaire this
+survey is adapted from. Only Q6 is reverse-scored below.
+
+Creative Perceptions reverse items (Q6, Q11) were checked against
+`creative-perceptions.html` and are worded as expected — unchanged.
 
 ```{r recode-likert}
 kai_levels <- c("Very Hard" = 1, "Hard" = 2, "Easy" = 3, "Very Easy" = 4)
@@ -253,7 +394,7 @@ agree_levels <- c("Strongly Disagree" = 1, "Disagree" = 2,
 
 recode_likert <- function(x, levels) unname(levels[x])
 
-scored_data <- filtered_data %>%
+scored_data <- analysis_sample %>%
   mutate(across(matches("^kaiSurvey_Q\\d+$"), ~ recode_likert(.x, kai_levels))) %>%
   mutate(across(matches("^creativePerceptions_Q\\d+$"), ~ recode_likert(.x, agree_levels))) %>%
   mutate(across(matches("^workHabits_Q\\d+$"), ~ recode_likert(.x, agree_levels)))
@@ -262,7 +403,7 @@ scored_data <- filtered_data %>%
 ```{r reverse-score}
 reverse_cols <- c(
   "creativePerceptions_Q6", "creativePerceptions_Q11",
-  "workHabits_Q3", "workHabits_Q9", "workHabits_Q12"
+  "workHabits_Q6"
 )
 
 scored_data <- scored_data %>%
@@ -272,143 +413,316 @@ scored_data <- scored_data %>%
 ```{r average-scores}
 scored_data <- scored_data %>%
   mutate(
-    kai_score_out_of_4 = rowMeans(pick(matches("^kaiSurvey_Q\\d+$")), na.rm = TRUE),
-    creative_perceptions_score_out_of_5 = rowMeans(pick(matches("^creativePerceptions_Q\\d+$")), na.rm = TRUE),
-    work_habits_score_out_of_5 = rowMeans(pick(matches("^workHabits_Q\\d+$")), na.rm = TRUE)
+    kai_score = rowMeans(pick(matches("^kaiSurvey_Q\\d+$")), na.rm = TRUE),
+    creative_perceptions_score = rowMeans(pick(matches("^creativePerceptions_Q\\d+$")), na.rm = TRUE),
+    work_habits_score = rowMeans(pick(matches("^workHabits_Q\\d+$")), na.rm = TRUE)
   )
 
+scored_data <- scored_data %>%
+  left_join(b5_scored, by = "participant_id")
+
 scored_data %>%
-  select(participant_id, kai_score_out_of_4,
-         creative_perceptions_score_out_of_5, work_habits_score_out_of_5)
+  select(participant_id, kai_score, creative_perceptions_score, work_habits_score,
+         Extraversion, Agreeableness, Conscientiousness, EmotionalStability, Openness)
+```
+
+## Step 9: Composite Survey Score
+
+Pre-registered secondary test (a): equal-weight mean of z-scored Creative
+Perceptions, Work Habits, and KAI, computed within this analysis sample (will
+restabilize as more participants are collected).
+
+```{r survey-score}
+scored_data <- scored_data %>%
+  mutate(
+    SurveyScore = rowMeans(
+      cbind(
+        scale(creative_perceptions_score)[, 1],
+        scale(work_habits_score)[, 1],
+        scale(kai_score)[, 1]
+      ),
+      na.rm = TRUE
+    )
+  )
+
+scored_data %>% select(participant_id, creative_perceptions_score, work_habits_score, kai_score, SurveyScore)
+```
+
+## Step 10: Psychological richness (Three Good Lives)
+
+The Three Good Lives instrument has 15 items (only collected from participants
+20-24 onward — `NA` for 7-10). Its "psychologically rich life" subscale isn't
+explicitly keyed anywhere in this repo, so the grouping below is **inferred
+from item wording** rather than a verified published key: `interesting,
+dramatic, psychologically_rich`, plus reverse-scored `uneventful, monotonous`
+(1-7 scale, reverse = `8 - x`). Treat with appropriate caution — it's used
+purely exploratorily per the pre-registration.
+
+```{r psych-richness}
+scored_data <- scored_data %>%
+  mutate(across(matches("^threeGoodLife_tgl_"), extract_paren_num)) %>%
+  mutate(
+    PsychRichness = rowMeans(
+      cbind(
+        threeGoodLife_tgl_interesting,
+        threeGoodLife_tgl_dramatic,
+        threeGoodLife_tgl_psychologically_rich,
+        8 - threeGoodLife_tgl_uneventful,
+        8 - threeGoodLife_tgl_monotonous
+      ),
+      na.rm = TRUE
+    )
+  )
+
+scored_data %>% select(participant_id, PsychRichness, creative_perceptions_score)
+```
+
+Pre-registered exploratory correlation: does psychological richness correlate
+with Creative Perceptions? (n=5 — only participants 20-24 have this measure.)
+
+```{r psych-richness-correlation}
+pr_cor_data <- scored_data %>%
+  filter(!is.nan(PsychRichness))
+
+cor.test(pr_cor_data$PsychRichness, pr_cor_data$creative_perceptions_score)
 ```
 
 ```{r write-scores}
 write_csv(
   scored_data %>%
-    select(participant_id, kai_score_out_of_4,
-           creative_perceptions_score_out_of_5, work_habits_score_out_of_5),
+    select(participant_id, kai_score, creative_perceptions_score, work_habits_score,
+           SurveyScore, PsychRichness, Extraversion, Agreeableness, Conscientiousness,
+           EmotionalStability, Openness),
   "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/survey_scores.csv"
 )
 ```
 
-## Step 9: Correlate survey scores with quartile-face ages
+## Step 11: Face-level covariates (age, sex)
 
-For each of the 3 survey scores and each of the 3 quartile faces (Q1, median,
-Q3) from Step 5, test whether the survey score correlates with the age of the
-face the participant rated at that quartile (e.g. is a higher creative
-perceptions score linked to a younger Q1 face?). That's 3 scores x 3 quartiles
-= 9 Pearson correlation tests.
+`PetersonFaceData.csv` lists each face stimulus once (plus a duplicate
+"(Repeat)" row for the 10 repeat faces, carrying no extra information).
+`FaceAge` is the face's mean estimated age, grand-mean-centered across the
+faces used in this analysis. `FaceSex` isn't directly labeled, but the
+norming data's continuous `gender` column (0-100) splits cleanly into 6
+Male / 6 Female per age bracket at `gender > 50` — matching the pre-registered
+"six male and six female faces per bracket" design — so that threshold is used
+to derive it.
 
-```{r quartile-ages-wide}
-quartile_ages_wide <- quartile_faces_with_age %>%
-  select(participant_id, quartile, age) %>%
-  pivot_wider(names_from = quartile, values_from = age, names_prefix = "age_")
+```{r read-peterson}
+peterson_data <- read_csv(
+  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/PetersonFaceData.csv",
+  show_col_types = FALSE
+) %>%
+  filter(!str_detect(Bucket, "Repeat")) %>%
+  mutate(Stimulus = as.character(Stimulus)) %>%
+  distinct(Stimulus, `Mean Age`, gender) %>%
+  transmute(
+    face_num = Stimulus,
+    FaceAge_raw = `Mean Age`,
+    FaceSex = if_else(gender > 50, "Male", "Female")
+  )
+
+face_covariates <- peterson_data %>%
+  mutate(FaceAge = FaceAge_raw - mean(FaceAge_raw, na.rm = TRUE)) %>%
+  select(face_num, FaceAge, FaceSex)
+
+face_covariates
 ```
 
-```{r scores-and-ages}
-scores_and_ages <- scored_data %>%
-  select(participant_id, kai_score_out_of_4,
-         creative_perceptions_score_out_of_5, work_habits_score_out_of_5) %>%
-  left_join(quartile_ages_wide, by = "participant_id")
+## Step 12: Trial-level long dataset for the mixed models
 
-scores_and_ages
+One row per participant x first-presentation face (9 participants x 60 faces),
+joining rating, face covariates, condition, survey scores, and available
+demographics. `NA` where a field doesn't exist for that participant's survey
+version (political orientation, education, SES, and PsychRichness are only
+available for participants 20-24).
+
+```{r trial-long}
+trial_data <- face_long %>%
+  left_join(face_covariates, by = "face_num") %>%
+  left_join(
+    scored_data %>%
+      select(participant_id, condition, kai_score, creative_perceptions_score,
+             work_habits_score, SurveyScore, PsychRichness,
+             Extraversion, Agreeableness, Conscientiousness, EmotionalStability, Openness,
+             ParticipantAge = demographics_age, ParticipantSex = demographics_sex,
+             ParticipantRace = demographics_race,
+             Education = demographics_educationLevel,
+             SES = demographics_socialStatusLadder,
+             PoliticalEconomic = demographics_politicalEconomic,
+             PoliticalSocial = demographics_politicalSocial),
+    by = "participant_id"
+  ) %>%
+  mutate(
+    Participant = factor(participant_id),
+    Face = factor(face_num),
+    FaceSex = factor(FaceSex),
+    CreativePerceptions = creative_perceptions_score,
+    WorkHabits = work_habits_score,
+    KAI = kai_score
+  )
+
+nrow(trial_data)  # expect 9 * 60 = 540
 ```
 
-```{r nine-correlations}
-score_cols <- c("kai_score_out_of_4", "creative_perceptions_score_out_of_5", "work_habits_score_out_of_5")
-age_cols <- c("age_Q1", "age_median", "age_Q3")
+## Step 13: Mixed-model fitting with the pre-registered fallback ladder
 
-combos <- expand.grid(score_col = score_cols, age_col = age_cols, stringsAsFactors = FALSE)
+Per the pre-registration: if a model fails to converge, first drop the
+random-slope correlation, then drop the random slope, reporting all attempted
+specifications.
 
-correlation_results <- combos %>%
-  mutate(r = NA_real_, p_value = NA_real_, n = NA_integer_)
+```{r fit-helper}
+fit_with_fallback <- function(fixed_rhs, data, label) {
+  specs <- list(
+    full = paste0("rating ~ ", fixed_rhs, " + (1 + FaceAge | Participant) + (1 | Face)"),
+    no_slope_corr = paste0("rating ~ ", fixed_rhs, " + (1 + FaceAge || Participant) + (1 | Face)"),
+    no_slope = paste0("rating ~ ", fixed_rhs, " + (1 | Participant) + (1 | Face)")
+  )
 
-for (i in seq_len(nrow(combos))) {
-  x <- scores_and_ages[[combos$score_col[i]]]
-  y <- scores_and_ages[[combos$age_col[i]]]
-  ct <- cor.test(x, y)
-  correlation_results$r[i] <- unname(ct$estimate)
-  correlation_results$p_value[i] <- ct$p.value
-  correlation_results$n[i] <- sum(complete.cases(x, y))
+  attempts <- list()
+  for (spec_name in names(specs)) {
+    formula_str <- specs[[spec_name]]
+    # lme4/lmerTest resolve `data` via match.call() + parent-frame lookups;
+    # under knitr's evaluate() that extra stack depth can make it look up the
+    # wrong frame (fails with "object '<outer var name>' not found"). Passing
+    # the data via do.call() embeds the already-evaluated data frame directly
+    # into the call, leaving no symbol for that lookup to get wrong.
+    fit <- withCallingHandlers(
+      tryCatch(
+        do.call(lmer, list(formula = as.formula(formula_str), data = data, REML = TRUE)),
+        error = function(e) e
+      ),
+      warning = function(w) invokeRestart("muffleWarning")
+    )
+    converged <- !inherits(fit, "error") &&
+      (is.null(fit@optinfo$conv$lme4$code) || length(fit@optinfo$conv$lme4$code) == 0) &&
+      !isSingular(fit)
+    attempts[[spec_name]] <- list(formula = formula_str, fit = fit, converged = converged)
+    if (converged) break
+  }
+
+  chosen_name <- names(attempts)[length(attempts)]
+  chosen <- attempts[[chosen_name]]
+  cat("[", label, "] specification used:", chosen_name,
+      "| converged cleanly:", chosen$converged, "\n")
+  cat("    formula:", chosen$formula, "\n")
+
+  list(label = label, spec_used = chosen_name, formula = chosen$formula,
+       converged = chosen$converged, fit = chosen$fit, attempts = attempts)
 }
 
-correlation_results
+tidy_or_note <- function(model_result) {
+  if (inherits(model_result$fit, "error")) {
+    tibble(model = model_result$label, term = NA_character_,
+           note = paste("failed to fit:", conditionMessage(model_result$fit)))
+  } else {
+    broom.mixed::tidy(model_result$fit, effects = "fixed") %>%
+      mutate(model = model_result$label, spec_used = model_result$spec_used, .before = 1)
+  }
+}
 ```
 
-```{r write-correlations}
+### Primary confirmatory test (professional-advice condition)
+
+`Rating ~ FaceAge × CreativePerceptions + Big5 + FaceSex + (1 + FaceAge |
+Participant) + (1 | Face)`. All 9 pilot participants are in the professional
+condition, so this is the full pilot sample.
+
+```{r model-primary}
+model_primary <- fit_with_fallback(
+  "FaceAge * CreativePerceptions + Extraversion + Agreeableness + Conscientiousness + EmotionalStability + Openness + FaceSex",
+  trial_data, "primary_confirmatory"
+)
+```
+
+### Domain-specificity test — not fit yet
+
+Pre-registered formula: `Rating ~ Condition × FaceAge × CreativePerceptions +
+FaceSex + (1 + FaceAge | Participant) + (1 | Face)`, fit on professional +
+emotional conditions pooled. **Not fit here** — all 9 pilot participants are in
+the `professional` condition, so `Condition` has no variation to test yet.
+Ready to run once emotional-condition data is collected.
+
+### Secondary confirmatory tests
+
+(a) Composite Survey Score replacing Creative Perceptions:
+
+```{r model-secondary-surveyscore}
+model_secondary_surveyscore <- fit_with_fallback(
+  "FaceAge * SurveyScore + Extraversion + Agreeableness + Conscientiousness + EmotionalStability + Openness + FaceSex",
+  trial_data, "secondary_survey_score"
+)
+```
+
+(b) Work Habits and KAI, each as separate models:
+
+```{r model-secondary-workhabits}
+model_secondary_workhabits <- fit_with_fallback(
+  "FaceAge * WorkHabits + Extraversion + Agreeableness + Conscientiousness + EmotionalStability + Openness + FaceSex",
+  trial_data, "secondary_work_habits"
+)
+```
+
+```{r model-secondary-kai}
+model_secondary_kai <- fit_with_fallback(
+  "FaceAge * KAI + Extraversion + Agreeableness + Conscientiousness + EmotionalStability + Openness + FaceSex",
+  trial_data, "secondary_kai"
+)
+```
+
+### Mechanism probe — not fit yet
+
+Pre-registered as the primary model fit within the perceived-intelligence
+condition. **Not fit here** — no `intelligence`-condition data exists yet.
+
+### Exploratory model
+
+`Rating ~ FaceAge × CreativePerceptions + Big5 + PsychRichness + ParticipantAge
++ ParticipantSex + ParticipantRace + Education + SES + PoliticalOrientation +
+FaceSex + (1 + FaceAge | Participant) + (1 | Face)`. Several of these terms
+(`PsychRichness`, `Education`, `SES`, political-orientation items) only exist
+for participants 20-24, so this effectively runs on n=5, not n=9 — `lmer` drops
+any row with a missing predictor.
+
+```{r model-exploratory}
+model_exploratory <- fit_with_fallback(
+  paste(
+    "FaceAge * CreativePerceptions",
+    "+ Extraversion + Agreeableness + Conscientiousness + EmotionalStability + Openness",
+    "+ PsychRichness + ParticipantAge + ParticipantSex + Education + SES",
+    "+ PoliticalEconomic + PoliticalSocial + FaceSex"
+  ),
+  trial_data, "exploratory"
+)
+```
+
+### Combined results table
+
+```{r combined-results}
+all_models <- list(model_primary, model_secondary_surveyscore,
+                    model_secondary_workhabits, model_secondary_kai,
+                    model_exploratory)
+
+model_results <- map_dfr(all_models, tidy_or_note)
+model_results
+```
+
+```{r write-model-results}
 write_csv(
-  correlation_results,
-  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/quartile_age_correlations.csv"
+  model_results,
+  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/model_results.csv"
 )
 ```
 
-### Visualize the 9 score-age relationships
+## Caveats
 
-A 3x3 grid of scatterplots (one per survey score x quartile-face combination),
-each with a linear fit. With only 4 participants this is mainly useful for
-spotting whether a correlation is being driven by a single outlier; it should
-get more informative as more participants (up to ~200 planned) are added.
-
-```{r score-age-grid-data}
-score_labels <- c(
-  kai_score_out_of_4 = "KAI score (/4)",
-  creative_perceptions_score_out_of_5 = "Creative perceptions score (/5)",
-  work_habits_score_out_of_5 = "Work habits score (/5)"
-)
-age_labels <- c(
-  age_Q1 = "Q1 face age",
-  age_median = "Median face age",
-  age_Q3 = "Q3 face age"
-)
-
-score_age_long <- scores_and_ages %>%
-  pivot_longer(cols = all_of(score_cols), names_to = "score_name", values_to = "score_value") %>%
-  pivot_longer(cols = all_of(age_cols), names_to = "age_name", values_to = "age_value") %>%
-  mutate(
-    score_name = factor(score_labels[score_name], levels = score_labels),
-    age_name = factor(age_labels[age_name], levels = age_labels)
-  )
-```
-
-```{r score-age-grid-plot, fig.width=9, fig.height=8}
-score_age_plot <- ggplot(score_age_long, aes(x = score_value, y = age_value)) +
-  geom_point(size = 2) +
-  geom_smooth(method = "lm", se = FALSE, color = "steelblue") +
-  facet_grid(age_name ~ score_name, scales = "free_x") +
-  labs(x = "Survey score", y = "Face age") +
-  theme_bw()
-
-score_age_plot
-```
-
-```{r write-score-age-plot}
-ggsave(
-  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/score_age_grid.png",
-  score_age_plot, width = 9, height = 8, dpi = 150
-)
-```
-
-### Same data, one panel per survey score (quartile as color)
-
-An alternative to the 3x3 grid above: one panel per survey score, with the
-three quartiles overlaid as separate colors/trend lines instead of separate
-facets. This makes it easier to compare whether the score-age relationship
-looks similar or different across Q1/median/Q3 within a single panel.
-
-```{r score-age-combined-plot, fig.width=11, fig.height=4}
-score_age_combined_plot <- ggplot(score_age_long, aes(x = score_value, y = age_value, color = age_name)) +
-  geom_point(size = 2) +
-  geom_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~score_name, scales = "free_x") +
-  labs(x = "Survey score", y = "Face age", color = "Quartile") +
-  theme_bw()
-
-score_age_combined_plot
-```
-
-```{r write-score-age-combined-plot}
-ggsave(
-  "/Users/isaaccohen/fastapi-jspsych-experiment-template-public-1/exported_data/score_age_combined.png",
-  score_age_combined_plot, width = 11, height = 4, dpi = 150
-)
-```
+- **n = 9 of a planned 600.** Random-effect variance components, convergence
+  behavior, and fixed-effect estimates above are pilot-scale sanity checks on
+  the pipeline, not evidence for or against H1/H2.
+- The domain-specificity and mechanism-probe tests require condition variation
+  this batch doesn't have yet.
+- `PsychRichness` and several exploratory demographic covariates are only
+  available for participants 20-24 (n=5), since those fields were added to the
+  survey after participants 7-10 took part.
+- The bot-check/attention-check exclusion criterion can't be evaluated from
+  stored data, since the front end already blocks submission on failure.
